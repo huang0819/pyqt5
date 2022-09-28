@@ -1,4 +1,5 @@
 from PyQt5 import QtGui, QtCore
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QLabel
 
 
@@ -19,14 +20,19 @@ class UserButtonStyle:
 
 
 class UserButton(QWidget):
+    user_click_signal = pyqtSignal(object)
+
     def __init__(self, **kwargs):
         super(UserButton, self).__init__()
+
+        self.data = kwargs['data']
+        self.index = kwargs['index']
 
         self.resize(300, 300)
 
         self.layout = QVBoxLayout()
 
-        style = UserButtonStyle.STYLE[kwargs['style']]
+        style = UserButtonStyle.STYLE[self.index % 2]
 
         self.button = QPushButton('', self)
         self.button.setIcon(QtGui.QIcon(style['user_img_path']))
@@ -34,7 +40,7 @@ class UserButton(QWidget):
         self.button.setMaximumSize(300, 300)
         self.button.setStyleSheet("border: none")
 
-        self.label = QLabel(kwargs['label'], self)
+        self.label = QLabel(self.data['name'], self)
         self.label.setStyleSheet(f"color: {style['font_color']}; font-weight: bold;")
         font = QtGui.QFont()
         font.setFamily("微軟正黑體")
@@ -47,3 +53,8 @@ class UserButton(QWidget):
         self.layout.addWidget(self.label)
 
         self.setLayout(self.layout)
+
+        self.button.clicked.connect(self.button_click_handler)
+
+    def button_click_handler(self):
+        self.user_click_signal.emit(self.data)

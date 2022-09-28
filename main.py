@@ -3,75 +3,48 @@ import traceback
 import os
 
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot, QThreadPool
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QStackedLayout, QPushButton
-from data_collect import Ui_MainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
 import time
 
 from ui.user_button import UserButton
+from ui.main_page import Ui_MainWindow
+from ui.user_select import UserSelect
+from ui.user_control import UserControl
 
 from utils.depth_camera import DepthCamera
 
+from fake_data.user_data import USER_DATA
 
-class Panel(QWidget):
-    def __init__(self, **kwargs):
-        super(Panel, self).__init__()
 
-        background_color = {'background-color': f"{kwargs['background_color']};"}
-
-        style = f"QWidget{background_color}".replace("'", '')
-
-        self.setStyleSheet(style)
-
-        onePanel_layout = QHBoxLayout()
-        qlabel = QLabel(kwargs['label'])
-        qlabel.setStyleSheet("color: blue; font-weight: bold; font-size: 24px")
-        onePanel_layout.addWidget(qlabel)
-
-        self.setLayout(onePanel_layout)
-
+class UI_PAGE_NAME:
+    USER_SELECT = 0
+    USER_CONTROL = 1
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
+        self.main_window = Ui_MainWindow()
+        self.main_window.setupUi(self)
         self.showFullScreen()
 
-        one = Panel(label='test 1', background_color='#66CCFF')
-        two = Panel(label='test 2', background_color='#66FFCC')
-        three = Panel(label='test 3', background_color='#EE0000')
+        self.user_select = UserSelect()
+        self.user_control = UserControl()
 
-        qls = QStackedLayout()
-        qls.addWidget(one)
-        qls.addWidget(two)
-        qls.addWidget(three)
+        self.qls = QStackedLayout()
+        self.qls.addWidget(self.user_select)
+        self.qls.addWidget(self.user_control)
 
-        self.ui.verticalLayout.addLayout(qls)
+        self.main_window.verticalLayout.addLayout(self.qls)
 
-        # self.ui.pushButton.clicked.connect(self.test)
+        self.main_window.title.setText('XX國小X年X班')
 
-        self.userBtn = UserButton(label='王曉明', style=0)
-        self.userBtn.resize(self.userBtn.sizeHint())
-        self.ui.gridLayout_2.addWidget(self.userBtn, 4, 0, 1, 1)
-
-        self.userBtn2 = UserButton(label='陳曉華', style=1)
-        self.userBtn2.resize(self.userBtn2.sizeHint())
-        self.ui.gridLayout_2.addWidget(self.userBtn2, 4, 1, 1, 1)
-
-        self.userBtn3 = UserButton(label='林大偉', style=0)
-        self.userBtn3.resize(self.userBtn3.sizeHint())
-        self.ui.gridLayout_2.addWidget(self.userBtn3, 4, 2, 1, 1)
-
-        self.userBtn4 = UserButton(label='菜比八', style=1)
-        self.userBtn4.resize(self.userBtn4.sizeHint())
-        self.ui.gridLayout_2.addWidget(self.userBtn4, 4, 3, 1, 1)
-
-        # self.userBtn.button.clicked.connect(lambda: print('hi'))
-
-        self.ui.pushButton.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton, qls))
-        self.ui.pushButton_2.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_2, qls))
-        self.ui.pushButton_3.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_3, qls))
+        self.user_buttons = []
+        for (index, user_data) in enumerate(USER_DATA):
+            self.user_buttons.append(UserButton(data=user_data, index=index))
+            self.user_buttons[index].resize(self.user_buttons[index].sizeHint())
+            self.user_select.gridLayout.addWidget(self.user_buttons[index], index // 5, index % 5, 1, 1)
+            self.user_buttons[index].user_click_signal.connect(self.user_button_click_handler)
 
         # 感測器
         self.depth_camera = DepthCamera('record', debug=True)
@@ -80,10 +53,14 @@ class MainWindow(QMainWindow):
         self.thread_pool = QThreadPool()
 
         worker1 = Worker(self.depth_camera.run)
-        worker2 = Worker(lambda: self.count(2))
+        worker2 = Worker(lambda: self.count(1))
+        worker2.signals.finished.connect(self.test)
 
         self.thread_pool.start(worker1)
         self.thread_pool.start(worker2)
+
+    def test(self):
+        print('test')
 
     def save_file(self):
         file_name = 'test'
@@ -91,21 +68,15 @@ class MainWindow(QMainWindow):
         self.depth_camera.save_file(file_path)
 
     def count(self, delay):
-        i = 0
-        while (True):
+        for i in range(5):
             print(i)
-            i += 1
             time.sleep(delay)
 
-    def buttonIsClicked(self, button, qls):
-        print(button.text())
-        dic = {
-            "1": 0,
-            "2": 1,
-            "3": 2
-        }
-        index = dic[button.text()]
-        qls.setCurrentIndex(index)
+    def user_button_click_handler(self, data):
+        print(data)
+        self.main_window.title.setText(f"您好，{data['name']}同學")
+
+        self.qls.setCurrentIndex(UI_PAGE_NAME.USER_CONTROL)
 
 
 class WorkerSignals(QObject):
