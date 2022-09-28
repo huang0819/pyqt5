@@ -2,11 +2,12 @@ import sys
 import traceback
 import os
 
-from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot, QThreadPool
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QStackedLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QLabel, QStackedLayout, QPushButton
 from data_collect import Ui_MainWindow
 import time
+
+from ui.user_button import UserButton
 
 from utils.depth_camera import DepthCamera
 
@@ -50,13 +51,27 @@ class MainWindow(QMainWindow):
 
         # self.ui.pushButton.clicked.connect(self.test)
 
+        self.userBtn = UserButton(label='王曉明', style=0)
+        self.userBtn.resize(self.userBtn.sizeHint())
+        self.ui.gridLayout_2.addWidget(self.userBtn, 4, 0, 1, 1)
+
+        self.userBtn2 = UserButton(label='陳曉華', style=1)
+        self.userBtn2.resize(self.userBtn2.sizeHint())
+        self.ui.gridLayout_2.addWidget(self.userBtn2, 4, 1, 1, 1)
+
+        self.userBtn3 = UserButton(label='林大偉', style=0)
+        self.userBtn3.resize(self.userBtn3.sizeHint())
+        self.ui.gridLayout_2.addWidget(self.userBtn3, 4, 2, 1, 1)
+
+        self.userBtn4 = UserButton(label='菜比八', style=1)
+        self.userBtn4.resize(self.userBtn4.sizeHint())
+        self.ui.gridLayout_2.addWidget(self.userBtn4, 4, 3, 1, 1)
+
+        # self.userBtn.button.clicked.connect(lambda: print('hi'))
+
         self.ui.pushButton.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton, qls))
         self.ui.pushButton_2.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_2, qls))
         self.ui.pushButton_3.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_3, qls))
-
-        # self.pushButton_test = QtWidgets.QPushButton()
-        # self.ui.gridLayout.addWidget(self.pushButton_test, 2, 1, 2, 2)
-        # self.pushButton_test.clicked.connect(self.save_file)
 
         # 感測器
         self.depth_camera = DepthCamera('record', debug=True)
