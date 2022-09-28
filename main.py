@@ -54,9 +54,9 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_2.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_2, qls))
         self.ui.pushButton_3.clicked.connect(lambda: self.buttonIsClicked(self.ui.pushButton_3, qls))
 
-        self.pushButton_test = QtWidgets.QPushButton()
-        self.ui.gridLayout.addWidget(self.pushButton_test, 2, 1, 2, 2)
-        self.pushButton_test.clicked.connect(self.save_file)
+        # self.pushButton_test = QtWidgets.QPushButton()
+        # self.ui.gridLayout.addWidget(self.pushButton_test, 2, 1, 2, 2)
+        # self.pushButton_test.clicked.connect(self.save_file)
 
         # 感測器
         self.depth_camera = DepthCamera('record', debug=True)
