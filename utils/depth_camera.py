@@ -59,6 +59,28 @@ class DepthCamera:
 
         logging.info('[DEPTH CAMERA] depth scale is: {}'.format(self.depth_scale))
 
+    def read(self):
+        # Wait for a coherent pair of frames: depth and color
+        frames = self.pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
+
+        # aligned_depth_frame is a 640x480 depth image
+        aligned_frames = self.align.process(frames)
+        depth_frame = aligned_frames.get_depth_frame()
+
+        if not depth_frame or not color_frame:
+            return None, None
+
+        # Intrinsic & Extrinsic
+        if self.depth_intrinsic is None:
+            self.depth_intrinsic = depth_frame.profile.as_video_stream_profile().intrinsics
+
+        # Convert images to numpy arrays
+        self.color_image = np.asanyarray(color_frame.get_data())
+        self.depth_image = np.asanyarray(depth_frame.get_data())
+
+        return self.color_image, self.depth_image
+
     def run(self):
         get_intrinsic = False
         while True:

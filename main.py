@@ -3,7 +3,8 @@ import traceback
 import os
 
 from PyQt5.QtCore import pyqtSignal, QObject, QRunnable, pyqtSlot, QThreadPool
-from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout, QLabel
 import time
 
 from ui.user_button import UserButton
@@ -11,7 +12,7 @@ from ui.main_page import Ui_MainWindow
 from ui.user_select import UserSelect
 from ui.user_control import UserControl
 
-from utils.depth_camera import DepthCamera
+from worker.camera_worker import DepthCameraWorker
 
 from fake_data.user_data import USER_DATA
 
@@ -19,6 +20,7 @@ from fake_data.user_data import USER_DATA
 class UI_PAGE_NAME:
     USER_SELECT = 0
     USER_CONTROL = 1
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -46,18 +48,18 @@ class MainWindow(QMainWindow):
             self.user_select.gridLayout.addWidget(self.user_buttons[index], index // 5, index % 5, 1, 1)
             self.user_buttons[index].user_click_signal.connect(self.user_button_click_handler)
 
-        # 感測器
-        self.depth_camera = DepthCamera('record', debug=True)
+        self.viewData = QLabel('test')
+        self.viewData.setMinimumSize(640, 480)
+        self.main_window.verticalLayout.addWidget(self.viewData)
 
         # 多執行序
         self.thread_pool = QThreadPool()
+        self.depth_camera_worker = DepthCameraWorker()
+        self.depth_camera_worker.signals.data.connect(self.show_image)
 
-        worker1 = Worker(self.depth_camera.run)
-        worker2 = Worker(lambda: self.count(1))
-        worker2.signals.finished.connect(self.test)
+        self.thread_pool.start(self.depth_camera_worker)
 
-        self.thread_pool.start(worker1)
-        self.thread_pool.start(worker2)
+        self.frame_num = 0
 
     def test(self):
         print('test')
@@ -78,6 +80,26 @@ class MainWindow(QMainWindow):
 
         self.qls.setCurrentIndex(UI_PAGE_NAME.USER_CONTROL)
 
+    def show_image(self, img):
+        len_y, len_x, _ = img.shape  # 取得影像尺寸
+
+        # 建立 Qimage 物件 (灰階格式)
+        # qimg = QtGui.QImage(img[:,:,0].copy().data, self.Nx, self.Ny, QtGui.QImage.Format_Indexed8)
+
+        # 建立 Qimage 物件 (RGB格式)
+        qimg = QImage(img.data, len_x, len_y, QImage.Format_RGB888)
+
+        self.viewData.setPixmap(QPixmap.fromImage(qimg))
+
+        # Frame Rate
+        if self.frame_num == 0:
+            self.time_start = time.time()
+        if self.frame_num >= 0:
+            self.frame_num += 1
+            self.t_total = time.time() - self.time_start
+            if self.frame_num % 100 == 0:
+                self.frame_rate = float(self.frame_num) / self.t_total
+                print(self.frame_rate)
 
 class WorkerSignals(QObject):
     """
