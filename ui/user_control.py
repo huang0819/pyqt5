@@ -33,6 +33,7 @@ BTN_STYLE = """
 
 class UserControl(QWidget):
     button_click_signal = pyqtSignal(int)
+    button_return_signal = pyqtSignal()
 
     def __init__(self, **kwargs):
         super(UserControl, self).__init__()
@@ -78,8 +79,17 @@ class UserControl(QWidget):
         self.layout.addWidget(self.after_meal_button, 2, 2, 1, 1)
 
         # spacer
-        self.v_spacer = QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.layout.addItem(self.v_spacer, 3, 0, 1, 1)
+        # self.v_spacer = QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        # self.layout.addItem(self.v_spacer, 3, 0, 1, 1)
+
+        # return btn
+        self.return_button = QPushButton('', self)
+        self.return_button.setMaximumSize(200, 200)
+        self.return_button.setIcon(QtGui.QIcon(r'resource/previous.png'))
+        self.return_button.setIconSize(QtCore.QSize(200, 200))
+        self.return_button.setStyleSheet('background-color: transparent')
+        self.return_button.clicked.connect(self.button_return_signal)
+        self.layout.addWidget(self.return_button, 3, 3, 1, 1)
 
         # set layout
         self.setLayout(self.layout)

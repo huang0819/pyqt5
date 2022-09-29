@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+import logging
 
 from PyQt5.QtCore import QThreadPool, QTimer
 from PyQt5.QtGui import QImage, QPixmap
@@ -31,13 +32,22 @@ class MainWindow(QMainWindow):
         self.main_window.setupUi(self)
         self.showFullScreen()
 
+        # user select page
         self.user_select = UserSelect()
+
+        # user control page
         self.user_control = UserControl()
-        self.init_user_control()
+        self.user_control.button_click_signal.connect(self.user_control_handler)
+        self.user_control.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+
+        # loading component
         self.loading_component = LoadingComponent()
+
+        # message component
         self.message_component = MessageComponent()
         self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
+        # stack layout
         self.qls = QStackedLayout()
         self.qls.addWidget(self.user_select)
         self.qls.addWidget(self.user_control)
@@ -49,7 +59,7 @@ class MainWindow(QMainWindow):
         self.set_title_text('XX國小X年X班')
 
         self.user_buttons = []
-        self.init_user_buttons()
+        self.set_user_buttons()
 
         # 多執行序
         self.thread_pool = QThreadPool()
@@ -60,6 +70,7 @@ class MainWindow(QMainWindow):
 
         # self.frame_num = 0
 
+        # 間隔一秒再存資料
         self.timer = QTimer()
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
@@ -69,34 +80,31 @@ class MainWindow(QMainWindow):
         self.save_type = None
         self.save_folder = 'record'
 
-    def init_user_buttons(self):
+    def set_user_buttons(self):
         self.user_buttons = []
         for (index, user_data) in enumerate(USER_DATA):
             self.user_buttons.append(UserButton(data=user_data, index=index))
             self.user_buttons[index].resize(self.user_buttons[index].sizeHint())
             self.user_select.gridLayout.addWidget(self.user_buttons[index], index // 5, index % 5, 1, 1)
-            self.user_buttons[index].user_click_signal.connect(self.user_button_click_handler)
-
-    def init_user_control(self):
-        self.user_control.button_click_signal.connect(self.user_control_handler)
+            self.user_buttons[index].user_click_signal.connect(self.user_button_handler)
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
 
     def user_control_handler(self, save_type):
         self.change_page(UI_PAGE_NAME.LOADING)
-        self.loading_component.start()
-
         self.save_type = save_type
 
         self.timer.start()
 
     def save_file(self):
+        self.timer.stop()
+
         file_name = '{}_{}_{}'.format(self.user_data['id'], self.save_type, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
         file_path = os.path.join(self.save_folder, '{}.npz'.format(file_name))
 
         self.depth_camera_worker.depth_camera.save_file(file_path)
-        self.timer.stop()
+
         print(f'save file {file_name}')
 
         self.change_page(UI_PAGE_NAME.MESSAGE)
@@ -107,14 +115,17 @@ class MainWindow(QMainWindow):
     def change_page(self, page):
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
+            self.user_select.verticalScrollBar().setValue(0)
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
+        elif page == UI_PAGE_NAME.LOADING:
+            self.loading_component.start()
         elif page == UI_PAGE_NAME.MESSAGE:
             self.message_component.start()
 
         self.qls.setCurrentIndex(page)
 
-    def user_button_click_handler(self, data):
+    def user_button_handler(self, data):
         self.user_data = data
         self.change_page(UI_PAGE_NAME.USER_CONTROL)
 
@@ -141,7 +152,23 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
+    FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+    DATE_FORMAT = '%Y%m%d %H:%M:%S'
+    # if args.show_log:
+    #     log_file_name = '{}_log.log'.format(datetime.datetime.now().strftime("%Y%m%d"))
+    #     log_file_path = os.path.join('logs', log_file_name)
+    # else:
+    #     log_file_path = None
+
+    log_file_path = None
+    logging.basicConfig(level=logging.DEBUG, filename=log_file_path, filemode='a', format=FORMAT)
+
+    logging.info('*** Start application ***')
+
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
+
+    logging.info('*** End application ***')
     sys.exit(app.exec_())
+
