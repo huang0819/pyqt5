@@ -61,6 +61,6 @@ class Tray:
 
 if __name__ == '__main__':
     # read file
-    tray = Tray(r'record/test.npz')
+    tray = Tray(r'record/10_0_20220929164325.npz')
     tray.read_data()
     tray.show()

@@ -7,6 +7,7 @@ class UserSelect(QScrollArea):
         super(UserSelect, self).__init__()
 
         self.setWidgetResizable(True)
+        self.setStyleSheet('border: none')
 
         self.scrollAreaWidgetContents = QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1860, 1020))

@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -16,6 +17,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
+        self.verticalLayout.setSpacing(20)
 
         self.title = QLabel(self.verticalLayoutWidget)
         self.title.setMaximumSize(QtCore.QSize(16777215, 150))
@@ -27,6 +29,13 @@ class Ui_MainWindow(object):
         self.title.setObjectName("title")
 
         self.verticalLayout.addWidget(self.title)
+
+        self.line = QFrame()
+        self.line.setFrameShape(QFrame.HLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+        self.line.setStyleSheet('background-color: #4472C4')
+
+        self.verticalLayout.addWidget(self.line)
 
         MainWindow.setCentralWidget(self.centralwidget)
 

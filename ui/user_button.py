@@ -46,8 +46,7 @@ class UserButton(QWidget):
         font.setFamily("微軟正黑體")
         font.setPointSize(32)
         self.label.setFont(font)
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setMaximumSize(300, 48)
+        self.label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
 
         self.layout.addWidget(self.button)
         self.layout.addWidget(self.label)
