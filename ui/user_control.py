@@ -87,7 +87,7 @@ class UserControl(QWidget):
         self.return_button.setMaximumSize(200, 200)
         self.return_button.setIcon(QtGui.QIcon(r'resource/previous.png'))
         self.return_button.setIconSize(QtCore.QSize(200, 200))
-        self.return_button.setStyleSheet('background-color: transparent')
+        self.return_button.setStyleSheet('background-color: #f0f0f0; border: none')
         self.return_button.clicked.connect(self.button_return_signal)
         self.layout.addWidget(self.return_button, 3, 3, 1, 1)
 

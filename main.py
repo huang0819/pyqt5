@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
 
         # message component
         self.message_component = MessageComponent()
-        self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+        self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT, top=1))
 
         # stack layout
         self.qls = QStackedLayout()
@@ -112,10 +112,11 @@ class MainWindow(QMainWindow):
         self.user_data = None
         self.save_type = None
 
-    def change_page(self, page):
+    def change_page(self, page, **kwargs):
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
-            self.user_select.verticalScrollBar().setValue(0)
+            if kwargs.get('top') == 1:
+                self.user_select.verticalScrollBar().setValue(0)
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
         elif page == UI_PAGE_NAME.LOADING:
