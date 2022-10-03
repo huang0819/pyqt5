@@ -34,6 +34,8 @@ class MainWindow(QMainWindow):
 
         # user select page
         self.user_select = UserSelect()
+        self.user_select.set_user_btn_page(USER_DATA[:16])
+        self.user_select.user_btn_click_signal.connect(self.user_button_handler)
 
         # user control page
         self.user_control = UserControl()
@@ -45,7 +47,7 @@ class MainWindow(QMainWindow):
 
         # message component
         self.message_component = MessageComponent()
-        self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT, top=1))
+        self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
         # stack layout
         self.qls = QStackedLayout()
@@ -59,7 +61,6 @@ class MainWindow(QMainWindow):
         self.set_title_text('XX國小X年X班')
 
         self.user_buttons = []
-        self.set_user_buttons()
 
         # 多執行序
         self.thread_pool = QThreadPool()
@@ -80,14 +81,6 @@ class MainWindow(QMainWindow):
         self.save_type = None
         self.save_folder = 'record'
 
-    def set_user_buttons(self):
-        self.user_buttons = []
-        for (index, user_data) in enumerate(USER_DATA):
-            self.user_buttons.append(UserButton(data=user_data, index=index))
-            self.user_buttons[index].resize(self.user_buttons[index].sizeHint())
-            self.user_select.gridLayout.addWidget(self.user_buttons[index], index // 5, index % 5, 1, 1)
-            self.user_buttons[index].user_click_signal.connect(self.user_button_handler)
-
     def set_title_text(self, text):
         self.main_window.title.setText(text)
 
@@ -100,12 +93,12 @@ class MainWindow(QMainWindow):
     def save_file(self):
         self.timer.stop()
 
-        file_name = '{}_{}_{}'.format(self.user_data['id'], self.save_type, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+        file_name = '{}_{}_{}'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S"), self.user_data['id'], self.save_type)
         file_path = os.path.join(self.save_folder, '{}.npz'.format(file_name))
 
         self.depth_camera_worker.depth_camera.save_file(file_path)
 
-        print(f'save file {file_name}')
+        logging.info(f'save file: {file_name}')
 
         self.change_page(UI_PAGE_NAME.MESSAGE)
 
@@ -115,8 +108,6 @@ class MainWindow(QMainWindow):
     def change_page(self, page, **kwargs):
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
-            if kwargs.get('top') == 1:
-                self.user_select.verticalScrollBar().setValue(0)
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
         elif page == UI_PAGE_NAME.LOADING:
@@ -170,6 +161,5 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
 
-    logging.info('*** End application ***')
     sys.exit(app.exec_())
 

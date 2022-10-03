@@ -85,7 +85,7 @@ class UserControl(QWidget):
         # return btn
         self.return_button = QPushButton('', self)
         self.return_button.setMaximumSize(200, 200)
-        self.return_button.setIcon(QtGui.QIcon(r'resource/previous.png'))
+        self.return_button.setIcon(QtGui.QIcon(r'resource/return.png'))
         self.return_button.setIconSize(QtCore.QSize(200, 200))
         self.return_button.setStyleSheet('background-color: #f0f0f0; border: none')
         self.return_button.clicked.connect(self.button_return_signal)

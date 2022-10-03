@@ -20,14 +20,13 @@ class Ui_MainWindow(object):
         self.verticalLayout.setSpacing(20)
 
         self.title = QLabel(self.verticalLayoutWidget)
-        self.title.setMaximumSize(QtCore.QSize(16777215, 150))
         font = QtGui.QFont()
         font.setFamily("微軟正黑體")
         font.setPointSize(48)
+        self.title.setFixedHeight(100)
         self.title.setFont(font)
         self.title.setAlignment(QtCore.Qt.AlignCenter)
         self.title.setObjectName("title")
-
         self.verticalLayout.addWidget(self.title)
 
         self.line = QFrame()
@@ -46,13 +45,3 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.title.setText(_translate("MainWindow", "TextLabel"))
-        # self.pushButton.setText(_translate("MainWindow", "1"))
-        # self.pushButton_2.setText(_translate("MainWindow", "2"))
-        # self.pushButton_3.setText(_translate("MainWindow", "3"))
-        # self.pushButton_7.setText(_translate("MainWindow", "PushButton"))
-        # self.pushButton_6.setText(_translate("MainWindow", "PushButton"))
-        # self.pushButton_4.setText(_translate("MainWindow", "PushButton"))
-        # self.pushButton_5.setText(_translate("MainWindow", "PushButton"))
-        # self.pushButton_9.setText(_translate("MainWindow", "PushButton"))
-        # self.pushButton_8.setText(_translate("MainWindow", "PushButton"))
-
