@@ -33,7 +33,7 @@ class UserSelect(QWidget):
         self.previous_label = QLabel('上一頁', self)
         self.previous_label.setFont(self.FONT_STYLE)
         self.previous_label.setStyleSheet(self.FONT_STYLE_SHEET)
-        self.previous_label.setAlignment(QtCore.Qt.AlignLeft)
+        self.previous_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.previous_label.resize(self.previous_label.sizeHint())
         self.previous_label.setGeometry(
             QtCore.QRect(0, self.height() // 2 - 20, self.BTN_SIZE, self.BTN_SIZE))
@@ -53,7 +53,7 @@ class UserSelect(QWidget):
         self.next_label = QLabel('下一頁', self)
         self.next_label.setFont(self.FONT_STYLE)
         self.next_label.setStyleSheet(self.FONT_STYLE_SHEET)
-        self.next_label.setAlignment(QtCore.Qt.AlignLeft)
+        self.next_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
         self.next_label.resize(self.previous_label.sizeHint())
         self.next_label.setGeometry(
             QtCore.QRect(self.width() - self.BTN_SIZE, self.height() // 2 - 20, self.BTN_SIZE, self.BTN_SIZE))
@@ -66,7 +66,6 @@ class UserSelect(QWidget):
         self.user_btn_area.setLayout(self.stacked_layout)
 
         self.user_btn_pages = []
-        self.user_buttons = []
 
         # params
         self.max_page = 0
