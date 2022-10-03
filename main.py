@@ -11,7 +11,6 @@ from fake_data.user_data import USER_DATA
 from ui.loading_component import LoadingComponent
 from ui.main_page import Ui_MainWindow
 from ui.message_component import MessageComponent
-from ui.user_button import UserButton
 from ui.user_control import UserControl
 from ui.user_select import UserSelect
 from worker.camera_worker import DepthCameraWorker
@@ -30,6 +29,8 @@ class MainWindow(QMainWindow):
 
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
+        self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+
         self.showFullScreen()
 
         # user select page
@@ -40,7 +41,6 @@ class MainWindow(QMainWindow):
         # user control page
         self.user_control = UserControl()
         self.user_control.button_click_signal.connect(self.user_control_handler)
-        self.user_control.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
         # loading component
         self.loading_component = LoadingComponent()
@@ -108,8 +108,10 @@ class MainWindow(QMainWindow):
     def change_page(self, page, **kwargs):
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
+            self.main_window.return_button.hide()
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
+            self.main_window.return_button.show()
         elif page == UI_PAGE_NAME.LOADING:
             self.loading_component.start()
         elif page == UI_PAGE_NAME.MESSAGE:
