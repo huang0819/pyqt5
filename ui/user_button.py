@@ -41,7 +41,7 @@ class UserButton(QWidget):
         self.button.setStyleSheet("border: none")
 
         self.label = QLabel(self.data['name'], self)
-        self.label.setStyleSheet(f"color: {style['font_color']}; font-weight: bold;")
+        self.label.setStyleSheet(f"color: {style['font_color']}")
         font = QtGui.QFont()
         font.setFamily("微軟正黑體")
         font.setPointSize(32)
