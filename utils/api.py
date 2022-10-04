@@ -6,6 +6,16 @@ class Api:
         self.base_url = url
 
     def post_data(self, data):
+        """
+        post collected data
+        :param data:
+            user_id: int
+            weight: float
+            meal_date: string
+            type: int
+            file: npz
+        :return:
+        """
         is_upload = 0
 
         url = f'{self.base_url}/api/meals'

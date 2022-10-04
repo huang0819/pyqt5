@@ -86,6 +86,7 @@ class MainWindow(QMainWindow):
 
         # 多執行序
         self.thread_pool = QThreadPool()
+
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
 
@@ -106,8 +107,7 @@ class MainWindow(QMainWindow):
         # Params
         self.user_data = None
         self.save_type = None
-
-        self.data_queue = queue.Queue()
+        self.is_upload = 0
 
         self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
 
@@ -136,7 +136,8 @@ class MainWindow(QMainWindow):
             'payload': {
                 'user_id': self.user_data['id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
-                'meal_date': datetime.datetime.now().strftime('%Y-%m-%d')
+                'meal_date': datetime.datetime.now().strftime('%Y-%m-%d'),
+                'type': self.save_type
             },
             'file_path': file_path,
             'file_name': file_name
@@ -144,23 +145,26 @@ class MainWindow(QMainWindow):
 
         upload_worker = UploadWorker(base_url=self.config.get('api', 'base_url'), data=data)
         upload_worker.setAutoDelete(True)
+        upload_worker.signals.result.connect(self.return_upload_result)
+
         self.thread_pool.start(upload_worker)
 
         self.save_json({
             file_name: {
                 'user_id': self.user_data['id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
-                'save_type': self.save_type
-                # 'is_upload': is_upload
+                'save_type': self.save_type,
+                'is_upload': self.is_upload
             }
         })
 
         logging.info('[MAIN] save json')
 
-        self.change_page(UI_PAGE_NAME.MESSAGE)
-
         self.user_data = None
         self.save_type = None
+        self.is_upload = 0
+
+        self.change_page(UI_PAGE_NAME.MESSAGE)
 
         self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
 
@@ -175,6 +179,9 @@ class MainWindow(QMainWindow):
 
         with open(self.json_path, 'w') as outfile:
             json.dump(json_data, outfile, indent=4)
+
+    def return_upload_result(self, is_upload):
+        self.is_upload = is_upload
 
     def change_page(self, page):
         self.main_window.return_button.hide()
