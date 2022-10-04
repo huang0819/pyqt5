@@ -10,11 +10,10 @@ class WeightReader:
         self.hx = HX711(dout, pd_sck)
         self.hx.set_reading_format("MSB", "MSB")
 
-        # HOW TO CALCULATE THE REFFERENCE UNIT
-        # To set the reference unit to 1. Put 1kg on your sensor or anything you have and know exactly how much it weights.
-        # In this case, 92 is 1 gram because, with 1 as a reference unit I got numbers near 0 without any weight
-        # and I got numbers around 184000 when I added 2kg. So, according to the rule of thirds:
-        # If 2000 grams is 184000 then 1000 grams is 184000 / 2000 = 92.
+        # HOW TO CALCULATE THE REFFERENCE UNIT To set the reference unit to 1. Put 1kg on your sensor or anything you
+        # have and know exactly how much it weights. In this case, 92 is 1 gram because, with 1 as a reference unit I
+        # got numbers near 0 without any weight and I got numbers around 184000 when I added 2kg. So, according to
+        # the rule of thirds: If 2000 grams is 184000 then 1000 grams is 184000 / 2000 = 92.
         self.hx.set_reference_unit(reference_unit)
 
         self.hx.reset()
@@ -38,15 +37,15 @@ class WeightReader:
         GPIO.cleanup()
 
     def read(self):
-        self.val = self.hx.get_weight(5)
+        self.val = max(0, self.hx.get_weight(5))
         self.hx.power_down()
         self.hx.power_up()
 
     def run(self):
         while True:
-            # These three lines are usefull to debug wether to use MSB or LSB in the reading formats
-            # for the first parameter of "hx.set_reading_format("LSB", "MSB")".
-            # Comment the two lines "val = hx.get_weight(5)" and "print val" and uncomment these three lines to see what it prints.
+            # These three lines are usefull to debug wether to use MSB or LSB in the reading formats for the first
+            # parameter of "hx.set_reading_format("LSB", "MSB")". Comment the two lines "val = hx.get_weight(5)" and
+            # "print val" and uncomment these three lines to see what it prints.
 
             # np_arr8_string = hx.get_np_arr8_string()
             # binary_string = hx.get_binary_string()

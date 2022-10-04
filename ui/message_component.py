@@ -24,7 +24,7 @@ class MessageComponent(QWidget):
 
         # Create message
         self.message = QLabel('資料收集完成\n可將餐盤取出', self)
-        self.message.setStyleSheet('color: #70AD47; font: bold 48px 微軟正黑體;')
+        self.message.setStyleSheet('color: #70AD47; font: 48px 微軟正黑體;')
         self.message.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         self.layout.addWidget(self.message)
 

@@ -97,8 +97,6 @@ class MainWindow(QMainWindow):
         self.thread_pool.start(self.depth_camera_worker)
         self.thread_pool.start(self.weight_reader_worker)
 
-        # self.frame_num = 0
-
         # 計數器，間隔一秒再存資料
         self.timer = QTimer()
         self.timer.setInterval(1000)
@@ -107,7 +105,6 @@ class MainWindow(QMainWindow):
         # Params
         self.user_data = None
         self.save_type = None
-        self.save_folder = 'record'
 
         self.data_queue = queue.Queue()
 
@@ -132,7 +129,7 @@ class MainWindow(QMainWindow):
 
         self.depth_camera_worker.depth_camera.save_file(file_path)
 
-        logging.info(f'save file: {file_name}')
+        logging.info(f'[MAIN] save file: {file_name}')
 
         self.data_queue.put({
             'payload': {
@@ -148,6 +145,7 @@ class MainWindow(QMainWindow):
             file_name: {
                 'user_id': self.user_data['id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
+                'save_type': self.save_type
                 # 'is_upload': is_upload
             }})
 
@@ -191,25 +189,9 @@ class MainWindow(QMainWindow):
         self.change_page(UI_PAGE_NAME.USER_CONTROL)
 
     def show_image(self, img):
-        len_y, len_x, _ = img.shape  # 取得影像尺寸
-
-        # 建立 Qimage 物件 (灰階格式)
-        # qimg = QtGui.QImage(img[:,:,0].copy().data, self.Nx, self.Ny, QtGui.QImage.Format_Indexed8)
-
-        # 建立 Qimage 物件 (RGB格式)
+        len_y, len_x, _ = img.shape
         qimg = QImage(img.data, len_x, len_y, QImage.Format_RGB888)
-
         self.user_control.image_view.setPixmap(QPixmap.fromImage(qimg))
-
-        # Frame Rate
-        # if self.frame_num == 0:
-        #     self.time_start = time.time()
-        # if self.frame_num >= 0:
-        #     self.frame_num += 1
-        #     self.t_total = time.time() - self.time_start
-        #     if self.frame_num % 100 == 0:
-        #         self.frame_rate = float(self.frame_num) / self.t_total
-        #         print(self.frame_rate)
 
     def exit_handler(self):
         self.led_controller.clear_GPIO()

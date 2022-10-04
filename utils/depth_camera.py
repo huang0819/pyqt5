@@ -1,12 +1,10 @@
 import pyrealsense2.pyrealsense2 as rs
 import numpy as np
 import cv2
-import datetime
-import os
 import logging
 
 class DepthCamera:
-    def __init__(self, save_folder, debug=False):
+    def __init__(self, debug=False):
         logging.info('[DEPTH CAMERA] setup module')
         self.depth_image = None
         self.color_image = None
@@ -16,13 +14,7 @@ class DepthCamera:
         self.pipeline = rs.pipeline()
         config = rs.config()
 
-        self.save_folder = save_folder
         self.debug = debug
-
-        # Create data folder
-        if not os.path.isdir(self.save_folder):
-            logging.info('[DEPTH CAMERA] Create data folder: {}'.format(self.save_folder))
-            os.makedirs(self.save_folder, exist_ok=True)
 
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(self.pipeline)
@@ -125,18 +117,6 @@ class DepthCamera:
                 cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
                 cv2.imshow('RealSense', images)
                 key = cv2.waitKey(1)
-
-                # Press esc or 'q' to close the image window
-                if key & 0xFF == ord('q') or key == 27:
-                    cv2.destroyAllWindows()
-                    break
-                elif key & 0xFF == ord('c'):
-                    file_name = '{}'.format(datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
-                    file_path = os.path.join(self.save_folder, '{}.npz'.format(file_name))
-
-                    self.save_file(file_path)
-
-                    logging.info('[DEPTH CAMERA] Save image : {}.npz'.format(file_name))
 
     def save_file(self, file_path):
         # rgb_image = np.copy(self.color_image[:, :, ::-1])
