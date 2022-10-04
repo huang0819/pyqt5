@@ -1,9 +1,8 @@
 import sys
 import traceback
-import numpy as np
 
 from PyQt5.QtCore import QRunnable, pyqtSlot, QObject, pyqtSignal
-from utils.depth_camera import DepthCamera
+from utils.weight_reader import WeightReader
 
 
 class WorkerSignals(QObject):
@@ -19,14 +18,14 @@ class WorkerSignals(QObject):
         tuple (exctype, value, traceback.format_exc() )
 
     data
-        int indicating % progress
+        float value of weight
 
     """
     finished = pyqtSignal()
     error = pyqtSignal(tuple)
-    data = pyqtSignal(np.ndarray)
+    data = pyqtSignal(float)
 
-class DepthCameraWorker(QRunnable):
+class WeightReaderWorker(QRunnable):
     """
     Worker thread
 
@@ -41,12 +40,16 @@ class DepthCameraWorker(QRunnable):
     """
 
     def __init__(self, **kwargs):
-        super(DepthCameraWorker, self).__init__()
+        super(WeightReaderWorker, self).__init__()
 
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
-        self.depth_camera = DepthCamera('record')
+        self.weight_reader = WeightReader(
+            dout=self.kwargs['channel_data'],
+            pd_sck=self.kwargs['channel_clk'],
+            reference_unit=(self.kwargs['reference_unit'])
+        )
 
     @pyqtSlot()
     def run(self):
@@ -55,10 +58,7 @@ class DepthCameraWorker(QRunnable):
         """
         try:
             while True:
-                image, depth = self.depth_camera.read()
-                if image is not None:
-                    rgb_image = np.copy(image[:, :, ::-1])
-                    self.signals.data.emit(rgb_image)
+                self.weight_reader.read()
         except:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]

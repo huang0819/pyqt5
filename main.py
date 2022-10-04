@@ -21,6 +21,7 @@ from ui.user_select import UserSelect
 from utils.led import LedController
 
 from worker.camera_worker import DepthCameraWorker
+from worker.weight_worker import WeightReaderWorker
 
 
 class MainWindow(QMainWindow):
@@ -78,6 +79,12 @@ class MainWindow(QMainWindow):
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
 
+        self.weight_reader_worker = WeightReaderWorker(
+            channel_data=self.config.getint('channel_data'),
+            channel_clk=self.config.getint('channel_clk'),
+            reference_unit=self.config.getfloat('reference_unit')
+        )
+
         self.thread_pool.start(self.depth_camera_worker)
 
         # self.frame_num = 0
@@ -86,6 +93,10 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
+
+        self.timer2 = QTimer()
+        self.timer2.setInterval(500)
+        self.timer2.timeout.connect(lambda: print(self.weight_reader_worker.weight_reader.val))
 
         # Params
         self.user_data = None
