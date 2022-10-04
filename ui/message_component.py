@@ -34,7 +34,6 @@ class MessageComponent(QWidget):
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.close)
 
-        # TODO: 倒數
 
     def start(self):
         self.timer.start()

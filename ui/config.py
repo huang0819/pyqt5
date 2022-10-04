@@ -1,0 +1,5 @@
+class UI_PAGE_NAME:
+    USER_SELECT = 0
+    USER_CONTROL = 1
+    LOADING = 2
+    MESSAGE = 3

@@ -1,32 +1,43 @@
 import datetime
+import json
 import os
 import sys
 import logging
+import configparser
 
 from PyQt5.QtCore import QThreadPool, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
 
 from fake_data.user_data import USER_DATA
+
+from ui.config import UI_PAGE_NAME
 from ui.loading_component import LoadingComponent
 from ui.main_page import Ui_MainWindow
 from ui.message_component import MessageComponent
 from ui.user_control import UserControl
 from ui.user_select import UserSelect
+
+from utils.led import LedController
+
 from worker.camera_worker import DepthCameraWorker
 
 
-class UI_PAGE_NAME:
-    USER_SELECT = 0
-    USER_CONTROL = 1
-    LOADING = 2
-    MESSAGE = 3
-
-
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, config):
         super(MainWindow, self).__init__()
 
+        self.config = config
+
+        # led control
+        self.led_controller = LedController(
+            channel_r=self.config.get('led', 'channel_r'),
+            channel_b=self.config.get('led', 'channel_g'),
+            channel_g=self.config.get('led', 'channel_b')
+        )
+        self.led_controller.set_value(*json.loads(config.get('led', 'state_setup')))
+
+        # ui setup
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
@@ -71,7 +82,7 @@ class MainWindow(QMainWindow):
 
         # self.frame_num = 0
 
-        # 間隔一秒再存資料
+        # 計數器，間隔一秒再存資料
         self.timer = QTimer()
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
@@ -81,6 +92,8 @@ class MainWindow(QMainWindow):
         self.save_type = None
         self.save_folder = 'record'
 
+        self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+
     def set_title_text(self, text):
         self.main_window.title.setText(text)
 
@@ -88,6 +101,7 @@ class MainWindow(QMainWindow):
         self.change_page(UI_PAGE_NAME.LOADING)
         self.save_type = save_type
 
+        self.led_controller.set_value(*json.loads(config.get('led', 'state_busy')))
         self.timer.start()
 
     def save_file(self):
@@ -105,7 +119,9 @@ class MainWindow(QMainWindow):
         self.user_data = None
         self.save_type = None
 
-    def change_page(self, page, **kwargs):
+        self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+
+    def change_page(self, page):
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
             self.main_window.return_button.hide()
@@ -159,8 +175,11 @@ if __name__ == '__main__':
 
     logging.info('*** Start application ***')
 
+    config = configparser.ConfigParser()
+    config.read(r'config/config.ini', encoding='utf-8')
+
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(config)
     window.show()
 
     sys.exit(app.exec_())
