@@ -23,7 +23,7 @@ class LoadingComponent(QWidget):
 
         # Create message
         self.message = QLabel('資料收集中，請稍後', self)
-        self.message.setStyleSheet('color: #2E75B6; font: bold 36px 微軟正黑體;')
+        self.message.setStyleSheet('color: #2E75B6; font: 36px 微軟正黑體;')
         self.message.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         self.layout.addWidget(self.message)
 

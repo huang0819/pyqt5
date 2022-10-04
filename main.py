@@ -23,6 +23,7 @@ from utils.led import LedController
 
 from worker.camera_worker import DepthCameraWorker
 from worker.weight_worker import WeightReaderWorker
+from worker.upload_worker import UploadWorker
 
 
 class MainWindow(QMainWindow):
@@ -131,7 +132,7 @@ class MainWindow(QMainWindow):
 
         logging.info(f'[MAIN] save file: {file_name}')
 
-        self.data_queue.put({
+        data = {
             'payload': {
                 'user_id': self.user_data['id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
@@ -139,7 +140,11 @@ class MainWindow(QMainWindow):
             },
             'file_path': file_path,
             'file_name': file_name
-        })
+        }
+
+        upload_worker = UploadWorker(base_url=self.config.get['api', 'base_url'], data=data)
+        upload_worker.setAutoDelete(True)
+        self.thread_pool.start(upload_worker)
 
         self.save_json({
             file_name: {
@@ -171,9 +176,10 @@ class MainWindow(QMainWindow):
             json.dump(json_data, outfile, indent=4)
 
     def change_page(self, page):
+        self.main_window.return_button.hide()
+
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(f"XX國小X年X班")
-            self.main_window.return_button.hide()
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
             self.main_window.return_button.show()
