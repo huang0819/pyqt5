@@ -1,4 +1,5 @@
 import sys
+import time
 import traceback
 
 from PyQt5.QtCore import QRunnable, pyqtSlot, QObject, pyqtSignal
@@ -59,6 +60,7 @@ class WeightReaderWorker(QRunnable):
         try:
             while True:
                 self.weight_reader.read()
+                time.sleep(0.1)
         except:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]

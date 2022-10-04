@@ -19,9 +19,18 @@ class WeightReader:
 
         self.hx.reset()
 
-        self.hx.tare()
-
         self.val = 0
+
+        logging.info('[WEIGHT] warm up')
+        # warm up
+        for _ in range(10):
+            _ = self.hx.get_weight(5)
+
+            self.hx.power_down()
+            self.hx.power_up()
+            time.sleep(0.1)
+        
+        self.hx.tare()
 
         logging.info('[WEIGHT] setup module')
 

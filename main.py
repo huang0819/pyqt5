@@ -80,12 +80,13 @@ class MainWindow(QMainWindow):
         self.depth_camera_worker.signals.data.connect(self.show_image)
 
         self.weight_reader_worker = WeightReaderWorker(
-            channel_data=self.config.getint('channel_data'),
-            channel_clk=self.config.getint('channel_clk'),
-            reference_unit=self.config.getfloat('reference_unit')
+            channel_data=self.config.getint('weight', 'channel_data'),
+            channel_clk=self.config.getint('weight', 'channel_clk'),
+            reference_unit=self.config.getfloat('weight', 'reference_unit')
         )
 
         self.thread_pool.start(self.depth_camera_worker)
+        self.thread_pool.start(self.weight_reader_worker)
 
         # self.frame_num = 0
 
@@ -97,6 +98,7 @@ class MainWindow(QMainWindow):
         self.timer2 = QTimer()
         self.timer2.setInterval(500)
         self.timer2.timeout.connect(lambda: print(self.weight_reader_worker.weight_reader.val))
+        self.timer2.start()
 
         # Params
         self.user_data = None
