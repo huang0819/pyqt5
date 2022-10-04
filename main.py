@@ -31,9 +31,9 @@ class MainWindow(QMainWindow):
 
         # led control
         self.led_controller = LedController(
-            channel_r=self.config.get('led', 'channel_r'),
-            channel_b=self.config.get('led', 'channel_g'),
-            channel_g=self.config.get('led', 'channel_b')
+            channel_r=self.config.getint('led', 'channel_r'),
+            channel_b=self.config.getint('led', 'channel_b'),
+            channel_g=self.config.getint('led', 'channel_g')
         )
         self.led_controller.set_value(*json.loads(config.get('led', 'state_setup')))
 
@@ -160,6 +160,10 @@ class MainWindow(QMainWindow):
         #         self.frame_rate = float(self.frame_num) / self.t_total
         #         print(self.frame_rate)
 
+    def exit_handler(self):
+        self.led_controller.clear_GPIO()
+        logging.info('*** Close application ***')
+
 
 if __name__ == '__main__':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
@@ -181,6 +185,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow(config)
     window.show()
-
     sys.exit(app.exec_())
-

@@ -17,5 +17,8 @@ class LedController:
 
     def set_value(self, value_r, value_g, value_b):
         GPIO.output(self.channel_r, value_r)
-        GPIO.output(self.channel_b, value_g)
-        GPIO.output(self.channel_g, value_b)
+        GPIO.output(self.channel_b, value_b)
+        GPIO.output(self.channel_g, value_g)
+
+    def clear_GPIO(self):
+        GPIO.cleanup()
