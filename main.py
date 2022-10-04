@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
             'file_name': file_name
         }
 
-        upload_worker = UploadWorker(base_url=self.config.get['api', 'base_url'], data=data)
+        upload_worker = UploadWorker(base_url=self.config.get('api', 'base_url'), data=data)
         upload_worker.setAutoDelete(True)
         self.thread_pool.start(upload_worker)
 
@@ -152,7 +152,8 @@ class MainWindow(QMainWindow):
                 'weight': self.weight_reader_worker.weight_reader.val,
                 'save_type': self.save_type
                 # 'is_upload': is_upload
-            }})
+            }
+        })
 
         logging.info('[MAIN] save json')
 
