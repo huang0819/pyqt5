@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import queue
 import sys
 import logging
 import configparser
@@ -29,6 +30,14 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.config = config
+
+        # Create data folder
+        self.save_folder = os.path.join(self.config.get('path', 'save_dir'), datetime.datetime.now().strftime("%Y%m%d"))
+        if not os.path.isdir(self.save_folder):
+            logging.info('[MAIN] create data folder: {}'.format(self.save_folder))
+            os.makedirs(self.save_folder, exist_ok=True)
+
+        self.json_path = os.path.join(self.save_folder, 'data.json')
 
         # led control
         self.led_controller = LedController(
@@ -95,15 +104,12 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
 
-        self.timer2 = QTimer()
-        self.timer2.setInterval(500)
-        self.timer2.timeout.connect(lambda: print(self.weight_reader_worker.weight_reader.val))
-        self.timer2.start()
-
         # Params
         self.user_data = None
         self.save_type = None
         self.save_folder = 'record'
+
+        self.data_queue = queue.Queue()
 
         self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
 
@@ -120,12 +126,32 @@ class MainWindow(QMainWindow):
     def save_file(self):
         self.timer.stop()
 
-        file_name = '{}_{}_{}'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S"), self.user_data['id'], self.save_type)
+        file_name = '{}_{}_{}'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S"), self.user_data['id'],
+                                      self.save_type)
         file_path = os.path.join(self.save_folder, '{}.npz'.format(file_name))
 
         self.depth_camera_worker.depth_camera.save_file(file_path)
 
         logging.info(f'save file: {file_name}')
+
+        self.data_queue.put({
+            'payload': {
+                'user_id': self.user_data['id'],
+                'weight': self.weight_reader_worker.weight_reader.val,
+                'meal_date': datetime.datetime.now().strftime('%Y-%m-%d')
+            },
+            'file_path': file_path,
+            'file_name': file_name
+        })
+
+        self.save_json({
+            file_name: {
+                'user_id': self.user_data['id'],
+                'weight': self.weight_reader_worker.weight_reader.val,
+                # 'is_upload': is_upload
+            }})
+
+        logging.info('[MAIN] save json')
 
         self.change_page(UI_PAGE_NAME.MESSAGE)
 
@@ -133,6 +159,18 @@ class MainWindow(QMainWindow):
         self.save_type = None
 
         self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+
+    def save_json(self, data):
+        if os.path.isfile(self.json_path):
+            with open(self.json_path) as json_file:
+                json_data = json.load(json_file)
+        else:
+            json_data = {}
+
+        json_data.update(data)
+
+        with open(self.json_path, 'w') as outfile:
+            json.dump(json_data, outfile, indent=4)
 
     def change_page(self, page):
         if page == UI_PAGE_NAME.USER_SELECT:
