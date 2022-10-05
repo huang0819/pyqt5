@@ -28,8 +28,6 @@ class UserButton(QWidget):
         self.data = kwargs['data']
         self.index = kwargs['index']
 
-        self.resize(300, 300)
-
         self.layout = QVBoxLayout()
 
         style = UserButtonStyle.STYLE[self.index % 2]
@@ -37,7 +35,7 @@ class UserButton(QWidget):
         self.button = QPushButton('', self)
         self.button.setIcon(QtGui.QIcon(style['user_img_path']))
         self.button.setIconSize(QtCore.QSize(300, 300))
-        self.button.setMaximumSize(300, 300)
+        self.button.resize(300, 300)
         self.button.setStyleSheet("border: none")
 
         self.label = QLabel(self.data['name'], self)
@@ -47,6 +45,7 @@ class UserButton(QWidget):
         font.setPointSize(32)
         self.label.setFont(font)
         self.label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
+        self.label.resize(300, 50)
 
         self.layout.addWidget(self.button)
         self.layout.addWidget(self.label)
