@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import queue
 import sys
 import logging
 import configparser
@@ -20,6 +19,7 @@ from ui.user_control import UserControl
 from ui.user_select import UserSelect
 
 from utils.led import LedController
+from utils.api import Api
 
 from worker.camera_worker import DepthCameraWorker
 from worker.weight_worker import WeightReaderWorker
@@ -31,6 +31,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.config = config
+        self.api = Api(config.get('api', 'base_url'))
 
         # Create data folder
         self.save_folder = os.path.join(self.config.get('path', 'save_dir'), datetime.datetime.now().strftime("%Y%m%d"))
@@ -57,7 +58,8 @@ class MainWindow(QMainWindow):
 
         # user select page
         self.user_select = UserSelect()
-        self.user_select.set_user_btn_page(USER_DATA[:16])
+        self.user_list = self.api.fetch_user_list(school_id=1)
+        self.user_select.set_user_btn_page(self.user_list)
         self.user_select.user_btn_click_signal.connect(self.user_button_handler)
 
         # user control page
@@ -134,7 +136,7 @@ class MainWindow(QMainWindow):
 
         data = {
             'payload': {
-                'user_id': self.user_data['id'],
+                'user_id': self.user_data['user_id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
                 'meal_date': datetime.datetime.now().strftime('%Y-%m-%d'),
                 'type': self.save_type
@@ -151,7 +153,7 @@ class MainWindow(QMainWindow):
 
         self.save_json({
             file_name: {
-                'user_id': self.user_data['id'],
+                'user_id': self.user_data['user_id'],
                 'weight': self.weight_reader_worker.weight_reader.val,
                 'save_type': self.save_type,
                 'is_upload': self.is_upload

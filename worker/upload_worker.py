@@ -28,7 +28,7 @@ class UploadWorker(QRunnable):
         Initialise the runner function with passed args, kwargs.
         """
         try:
-            is_upload = self.api.post_data(self.data)
+            is_upload = self.api.upload_data(self.data)
             self.signals.result.emit(is_upload)
         except:
             traceback.print_exc()
