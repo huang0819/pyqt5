@@ -9,8 +9,6 @@ from PyQt5.QtCore import QThreadPool, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
 
-from fake_data.user_data import USER_DATA
-
 from ui.config import UI_PAGE_NAME
 from ui.loading_component import LoadingComponent
 from ui.main_page import Ui_MainWindow
@@ -42,12 +40,12 @@ class MainWindow(QMainWindow):
         self.json_path = os.path.join(self.save_folder, 'data.json')
 
         # led control
-        self.led_controller = LedController(
-            channel_r=self.config.getint('led', 'channel_r'),
-            channel_b=self.config.getint('led', 'channel_b'),
-            channel_g=self.config.getint('led', 'channel_g')
-        )
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_setup')))
+        # self.led_controller = LedController(
+        #     channel_r=self.config.getint('led', 'channel_r'),
+        #     channel_b=self.config.getint('led', 'channel_b'),
+        #     channel_g=self.config.getint('led', 'channel_g')
+        # )
+        # self.led_controller.set_value(*json.loads(config.get('led', 'state_setup')))
 
         # ui setup
         self.main_window = Ui_MainWindow()
@@ -58,9 +56,12 @@ class MainWindow(QMainWindow):
 
         # user select page
         self.user_select = UserSelect()
-        self.user_list = self.api.fetch_user_list(school_id=1)
+        self.user_list = self.api.fetch_user_list(school_id=self.config.getint('school', 'id'))
         self.user_select.set_user_btn_page(self.user_list)
         self.user_select.user_btn_click_signal.connect(self.user_button_handler)
+
+        self.set_title_text(
+            f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
 
         # user control page
         self.user_control = UserControl()
@@ -82,24 +83,22 @@ class MainWindow(QMainWindow):
 
         self.main_window.verticalLayout.addLayout(self.qls)
 
-        self.set_title_text('XX國小X年X班')
-
         self.user_buttons = []
 
         # 多執行序
-        self.thread_pool = QThreadPool()
-
-        self.depth_camera_worker = DepthCameraWorker()
-        self.depth_camera_worker.signals.data.connect(self.show_image)
-
-        self.weight_reader_worker = WeightReaderWorker(
-            channel_data=self.config.getint('weight', 'channel_data'),
-            channel_clk=self.config.getint('weight', 'channel_clk'),
-            reference_unit=self.config.getfloat('weight', 'reference_unit')
-        )
-
-        self.thread_pool.start(self.depth_camera_worker)
-        self.thread_pool.start(self.weight_reader_worker)
+        # self.thread_pool = QThreadPool()
+        #
+        # self.depth_camera_worker = DepthCameraWorker()
+        # self.depth_camera_worker.signals.data.connect(self.show_image)
+        #
+        # self.weight_reader_worker = WeightReaderWorker(
+        #     channel_data=self.config.getint('weight', 'channel_data'),
+        #     channel_clk=self.config.getint('weight', 'channel_clk'),
+        #     reference_unit=self.config.getfloat('weight', 'reference_unit')
+        # )
+        #
+        # self.thread_pool.start(self.depth_camera_worker)
+        # self.thread_pool.start(self.weight_reader_worker)
 
         # 計數器，間隔一秒再存資料
         self.timer = QTimer()
@@ -111,7 +110,7 @@ class MainWindow(QMainWindow):
         self.save_type = None
         self.is_upload = 0
 
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+        # self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
