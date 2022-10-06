@@ -139,11 +139,20 @@ class SettingPage(QWidget):
             }
         })
 
+        self.clear()
+
+    def clear(self):
         self.select_school.clear()
         self.select_grade.clear()
         self.select_class.clear()
 
+        self.school_data = None
+        self.grade = None
+        self.class_name = None
+
     def set_options(self, schools, school_config):
+        self.clear()
+
         current = dict(school_config)
         self.select_school.set_options(schools, 'name', current['name'])
 
