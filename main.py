@@ -15,6 +15,7 @@ from ui.main_page import Ui_MainWindow
 from ui.message_component import MessageComponent
 from ui.user_control import UserControl
 from ui.user_select import UserSelect
+from ui.setting_page import SettingPage
 
 from utils.led import LedController
 from utils.api import Api
@@ -51,13 +52,13 @@ class MainWindow(QMainWindow):
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+        self.main_window.button_setting_signal.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
 
         self.showFullScreen()
 
         # user select page
         self.user_select = UserSelect()
-        self.user_list = self.api.fetch_user_list(school_id=self.config.getint('school', 'id'))
-        self.user_select.set_user_btn_page(self.user_list)
+        self.set_user_list()
         self.user_select.user_btn_click_signal.connect(self.user_button_handler)
 
         self.set_title_text(
@@ -74,12 +75,17 @@ class MainWindow(QMainWindow):
         self.message_component = MessageComponent()
         self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
+        # setting page
+        self.setting_page = SettingPage()
+        self.setting_page.save_signal.connect(self.save_config)
+
         # stack layout
         self.qls = QStackedLayout()
         self.qls.addWidget(self.user_select)
         self.qls.addWidget(self.user_control)
         self.qls.addWidget(self.loading_component)
         self.qls.addWidget(self.message_component)
+        self.qls.addWidget(self.setting_page)
 
         self.main_window.verticalLayout.addLayout(self.qls)
 
@@ -189,7 +195,7 @@ class MainWindow(QMainWindow):
 
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(
-            f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
+                f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
             self.main_window.return_button.show()
@@ -197,6 +203,10 @@ class MainWindow(QMainWindow):
             self.loading_component.start()
         elif page == UI_PAGE_NAME.MESSAGE:
             self.message_component.start()
+        elif page == UI_PAGE_NAME.SETTING:
+            self.setting_page.set_options(self.api.fetch_schools(), self.config.items('school'))
+            self.set_title_text('設定')
+            self.main_window.return_button.show()
 
         self.qls.setCurrentIndex(page)
 
@@ -208,6 +218,28 @@ class MainWindow(QMainWindow):
         len_y, len_x, _ = img.shape
         qimg = QImage(img.data, len_x, len_y, QImage.Format_RGB888)
         self.user_control.image_view.setPixmap(QPixmap.fromImage(qimg))
+
+    def set_user_list(self):
+        user_list = self.api.fetch_user_list(
+            school_id=self.config.getint('school', 'id'),
+            grade=self.config.getint('school', 'grade'),
+            class_name=self.config.getint('school', 'class')
+        )
+        self.user_select.set_user_btn_page(user_list)
+
+    def save_config(self, data):
+        for section, value in data.items():
+            for attr, val in value.items():
+                self.config[section][attr] = str(val)
+
+        with open(r'config/config.ini', 'w', encoding='utf-8') as config_file:
+            self.config.write(config_file)
+
+        logging.info('[Main] save config')
+
+        self.set_user_list()
+
+        self.change_page(UI_PAGE_NAME.USER_SELECT)
 
     def exit_handler(self):
         self.led_controller.clear_GPIO()

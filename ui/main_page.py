@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QFrame, QPushButton
 
 class Ui_MainWindow(QObject):
     button_return_signal = pyqtSignal()
+    button_setting_signal = pyqtSignal()
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("AI Food Assessment Data Collect Tool")
@@ -42,6 +43,13 @@ class Ui_MainWindow(QObject):
         self.return_button.setGeometry(QtCore.QRect(20, 20, 100, 100))
         self.return_button.clicked.connect(self.button_return_signal)
         self.return_button.hide()
+
+        # setting btn
+        self.setting_button = QPushButton('', MainWindow)
+        self.setting_button.setMaximumSize(100, 100)
+        self.setting_button.setStyleSheet('background-color: #f0f0f0; border: none')
+        self.setting_button.setGeometry(QtCore.QRect(1780, 20, 100, 100))
+        self.setting_button.clicked.connect(self.button_setting_signal)
 
         self.verticalLayout.addWidget(self.line)
 

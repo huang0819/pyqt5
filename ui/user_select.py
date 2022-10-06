@@ -72,7 +72,11 @@ class UserSelect(QWidget):
         self.page = 0
 
     def set_user_btn_page(self, user_list):
+        for user_btn_page in self.user_btn_pages:
+            self.stacked_layout.removeWidget(user_btn_page)
+
         self.user_btn_pages = []
+
         self.page = 0
         self.max_page = len(user_list) // 10
 

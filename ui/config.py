@@ -3,3 +3,4 @@ class UI_PAGE_NAME:
     USER_CONTROL = 1
     LOADING = 2
     MESSAGE = 3
+    SETTING = 4
