@@ -260,12 +260,14 @@ if __name__ == '__main__':
 
     if args.show_log:
         log_file_path = None
+        log_level = logging.DEBUG
     else:
         log_file_name = '{}_log.log'.format(datetime.datetime.now().strftime("%Y%m%d"))
         log_file_path = os.path.join('logs', log_file_name)
         os.makedirs('logs', exist_ok=True)
+        log_level = logging.INFO
 
-    logging.basicConfig(level=logging.DEBUG, filename=log_file_path, filemode='a', format=FORMAT)
+    logging.basicConfig(level=log_level, filename=log_file_path, filemode='a', format=FORMAT)
     logging.info(f'*** Start application {CODE_VERSION} ***')
 
     logging.info('[MAIN] read config file')
