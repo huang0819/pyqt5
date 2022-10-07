@@ -1,7 +1,7 @@
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QGridLayout, QComboBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QGridLayout, QComboBox, QSpinBox
 from PyQt5.QtCore import pyqtSignal
 
 
@@ -90,6 +90,39 @@ class Select(QComboBox):
     def handler(self, index):
         self.data_signal.emit(self.options[index])
 
+class ClassSelect(QSpinBox):
+    data_signal = pyqtSignal(object)
+    FONT = QtGui.QFont('微軟正黑體', 36)
+
+    def __init__(self, parent, start, size):
+        super(ClassSelect, self).__init__()
+
+        self.setParent(parent)
+        self.setFont(self.FONT)
+        self.setStyleSheet("""
+                    QSpinBox {
+                        background-color: #f0f0f0;
+                        border: 3px solid #8c8c8c;
+                        padding: 0 20px 0 20px
+                    }
+                    QSpinBox::drop-down {
+                        width: 30px;
+                    }
+                    """)
+        self.resize(*size)
+        self.setGeometry(QtCore.QRect(*start, self.width(), self.height()))
+
+        self.valueChanged.connect(self.handler)
+
+        self.setRange(1, 20)
+        self.setSuffix('班')
+
+    def set_options(self, current_label):
+        self.setValue(current_label)
+
+    def handler(self, value):
+        self.data_signal.emit(value)
+
 
 class SettingPage(QWidget):
     ICON_SIZE = 64
@@ -117,10 +150,10 @@ class SettingPage(QWidget):
         self.select_grade.data_signal.connect(self.set_grade)
 
         self.label_class = Label(self, '班級', (100, 500))
-        self.select_class = Select(self, (300, 500), (1000, 100))
+        self.select_class = ClassSelect(self, (300, 500), (1000, 100))
         self.select_class.data_signal.connect(self.set_class)
 
-        # set before meal btn
+        # set save btn
         self.save_btn = QPushButton('儲存', self)
         self.save_btn.setMaximumSize(200, 100)
         self.save_btn.setStyleSheet(BTN_STYLE.format(**COLOR_MAP.BLUE))
@@ -135,7 +168,7 @@ class SettingPage(QWidget):
                 'id': self.school_data['id'],
                 'name': self.school_data['name'],
                 'grade': self.grade['value'],
-                'class': self.class_name['value']
+                'class': self.class_name
             }
         })
 
@@ -154,6 +187,10 @@ class SettingPage(QWidget):
         self.clear()
 
         current = dict(school_config)
+        self.school_data = {'id': current['id'], 'name': current['name']}
+        self.grade = {'value': current['grade']}
+        self.class_name = current['class']
+
         self.select_school.set_options(schools, 'name', current['name'])
 
         grades = []
@@ -165,14 +202,7 @@ class SettingPage(QWidget):
 
         self.select_grade.set_options(grades, 'label', f"{current['grade']}年級")
 
-        classes = []
-        for i in range(1, 21):
-            classes.append({
-                'label': f'{i}班',
-                'value': i
-            })
-
-        self.select_class.set_options(classes, 'label', f"{current['class']}班")
+        self.select_class.set_options(int(current['class']))
 
     def set_school_data(self, data):
         self.school_data = data
