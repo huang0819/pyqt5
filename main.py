@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import json
 import os
@@ -24,6 +25,13 @@ from worker.camera_worker import DepthCameraWorker
 from worker.weight_worker import WeightReaderWorker
 from worker.upload_worker import UploadWorker
 
+CODE_VERSION = '1.0.0'
+
+CONFIG_PATH = r'config/config.ini'
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-sl', '--show_log', action='store_true', help='show message in terminal')
+args = parser.parse_args()
 
 class MainWindow(QMainWindow):
     def __init__(self, config):
@@ -232,10 +240,10 @@ class MainWindow(QMainWindow):
             for attr, val in value.items():
                 self.config[section][attr] = str(val)
 
-        with open(r'config/config.ini', 'w', encoding='utf-8') as config_file:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as config_file:
             self.config.write(config_file)
 
-        logging.info('[Main] save config')
+        logging.info('[MAIN] save config')
 
         self.set_user_list()
 
@@ -249,19 +257,20 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     DATE_FORMAT = '%Y%m%d %H:%M:%S'
-    # if args.show_log:
-    #     log_file_name = '{}_log.log'.format(datetime.datetime.now().strftime("%Y%m%d"))
-    #     log_file_path = os.path.join('logs', log_file_name)
-    # else:
-    #     log_file_path = None
 
-    log_file_path = None
+    if args.show_log:
+        log_file_path = None
+    else:
+        log_file_name = '{}_log.log'.format(datetime.datetime.now().strftime("%Y%m%d"))
+        log_file_path = os.path.join('logs', log_file_name)
+        os.makedirs('logs', exist_ok=True)
+
     logging.basicConfig(level=logging.DEBUG, filename=log_file_path, filemode='a', format=FORMAT)
+    logging.info(f'*** Start application {CODE_VERSION} ***')
 
-    logging.info('*** Start application ***')
-
+    logging.info('[MAIN] read config file')
     config = configparser.ConfigParser()
-    config.read(r'config/config.ini', encoding='utf-8')
+    config.read(CONFIG_PATH, encoding='utf-8')
 
     app = QApplication(sys.argv)
     window = MainWindow(config)
