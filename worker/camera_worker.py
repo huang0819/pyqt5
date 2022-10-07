@@ -16,7 +16,7 @@ class DepthCameraWorker(QRunnable):
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
-        self.depth_camera = DepthCamera('record')
+        self.depth_camera = DepthCamera()
 
     @pyqtSlot()
     def run(self):

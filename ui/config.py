@@ -4,3 +4,4 @@ class UI_PAGE_NAME:
     LOADING = 2
     MESSAGE = 3
     SETTING = 4
+    TEST_MODULE = 5
