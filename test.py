@@ -39,13 +39,13 @@ class MainWindow(QMainWindow):
         # ui setup
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
-        self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
-        self.main_window.button_setting_signal.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
+        self.main_window.return_button.show()
+        self.main_window.button_return_signal.connect(self.exit_handler)
 
         self.showFullScreen()
 
         self.test_module_page = TestModulePage()
-        self.test_module_page.led_signal.connect()
+        self.test_module_page.led_signal.connect(self.set_led_status)
 
         self.set_title_text(f"測試裝置")
 
@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
 
     def exit_handler(self):
-        self.led_controller.clear_GPIO()
+        self.close()
         logging.info('*** Close application ***')
 
 

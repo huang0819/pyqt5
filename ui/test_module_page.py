@@ -109,7 +109,7 @@ class TestModulePage(QWidget):
         if component == COMPONENT_NAME.LED:
             self.timer.start()
         else:
-            self.timer.close()
+            self.timer.stop()
 
         self.stacked_layout.setCurrentIndex(component)
 
@@ -123,9 +123,9 @@ class TestModulePage(QWidget):
 
     def led_handler(self):
         self.led_module_page.set_status(self.led_status)
-        self.led_status = (self.led_status + 1) % 3
-
         self.led_signal.emit(self.LED_STATUS[self.led_status])
+
+        self.led_status = (self.led_status + 1) % 3
 
 
 class DepthCameraPage(QWidget):
