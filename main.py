@@ -200,10 +200,12 @@ class MainWindow(QMainWindow):
 
     def change_page(self, page):
         self.main_window.return_button.hide()
+        self.main_window.setting_button.hide()
 
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(
                 f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
+            self.main_window.setting_button.show()
         elif page == UI_PAGE_NAME.USER_CONTROL:
             self.set_title_text(f"您好，{self.user_data['name']}同學")
             self.main_window.return_button.show()

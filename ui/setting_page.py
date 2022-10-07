@@ -67,7 +67,7 @@ class Select(QComboBox):
                         width: 60px;
                     }
                     QComboBox::down-arrow {
-                        image: url(resource/next.png);
+                        image: url(resource/drop_down.png);
                         width: 60px;
                     }
                     """)
