@@ -66,6 +66,10 @@ class Select(QComboBox):
                     QComboBox::drop-down {
                         width: 60px;
                     }
+                    QComboBox::down-arrow {
+                        image: url(resource/next.png);
+                        width: 60px;
+                    }
                     """)
         self.resize(*size)
         self.setGeometry(QtCore.QRect(*start, self.width(), self.height()))
@@ -105,8 +109,11 @@ class ClassSelect(QSpinBox):
                         border: 3px solid #8c8c8c;
                         padding: 0 20px 0 20px
                     }
-                    QSpinBox::drop-down {
-                        width: 30px;
+                    QSpinBox::up-button {
+                        width: 60px;
+                    }
+                    QSpinBox::down-button {
+                        width: 60px;
                     }
                     """)
         self.resize(*size)
