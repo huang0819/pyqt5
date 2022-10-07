@@ -1,6 +1,4 @@
-import sys
 import logging
-import traceback
 
 from PyQt5.QtCore import QRunnable, pyqtSlot, QObject, pyqtSignal
 
@@ -9,7 +7,6 @@ from utils.api import Api
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
-    error = pyqtSignal(tuple)
     result = pyqtSignal(int)
 
 class UploadWorker(QRunnable):
@@ -24,16 +21,11 @@ class UploadWorker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        """
-        Initialise the runner function with passed args, kwargs.
-        """
         try:
             is_upload = self.api.upload_data(self.data)
             self.signals.result.emit(is_upload)
         except:
-            traceback.print_exc()
-            exctype, value = sys.exc_info()[:2]
-            self.signals.error.emit((exctype, value, traceback.format_exc()))
+            logging.error("[UPLOAD WORKER] catch an exception.", exc_info=True)
         finally:
-            logging.info('[UPLOAD] finish upload')
+            logging.info(f"[UPLOAD WORKER] finish upload {self.data['file_name']}")
             self.signals.finished.emit()  # Done
