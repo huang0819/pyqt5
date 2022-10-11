@@ -66,9 +66,9 @@ class TestModulePage(QWidget):
     led_signal = pyqtSignal(str)
     LED_STATUS = ['state_setup', 'state_idle', 'state_busy']
 
-    def __init__(self, **kwargs):
+    def __init__(self, config):
         super(TestModulePage, self).__init__()
-        self.kwargs = kwargs
+        self.config = config
 
         # 1880 * 1040
         self.setGeometry(0, 0, 1880, 1040)
@@ -108,6 +108,12 @@ class TestModulePage(QWidget):
         self.led_status = 0
 
         # Depth
+        self.weight_reader = WeightReader(
+            dout=self.config.getint('weight', 'channel_data'),
+            pd_sck=self.config.getint('weight', 'channel_clk'),
+            reference_unit=self.config.getfloat('weight', 'reference_unit')
+        )
+
         self.weight_timer = QTimer()
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)
@@ -142,7 +148,7 @@ class TestModulePage(QWidget):
 
     def weight_handler(self):
         self.weight_reader.read()
-        self.weight_module_page.set_weight(self.weight_reader.weight_reader.val)
+        self.weight_module_page.set_weight(self.weight_reader.val)
 
 
 class DepthCameraPage(QWidget):

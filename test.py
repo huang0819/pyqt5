@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
 
         self.showFullScreen()
 
-        self.test_module_page = TestModulePage()
+        self.test_module_page = TestModulePage(self.config)
         self.test_module_page.led_signal.connect(self.set_led_status)
 
         self.set_title_text(f"測試裝置")
