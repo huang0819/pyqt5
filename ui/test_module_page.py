@@ -3,7 +3,7 @@ import time
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal, QTimer
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QMovie
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout
 
 import logging
@@ -89,7 +89,7 @@ class TestModulePage(QWidget):
         self.depth_camera_page = DepthCameraPage(self, (0, 0), (1300, 900))
         self.led_module_page = LEDModulePage(self, (0, 0), (1300, 900))
         self.weight_module_page = WeightModulePage(self, (0, 0), (1300, 900))
-        self.weight_module_page.calibrate_signal.connect(self.calibrate)
+        self.weight_module_page.calibrate_signal.connect(self.read_empty_value)
 
         self.stacked_layout.addWidget(QWidget(self))
         self.stacked_layout.addWidget(self.depth_camera_page)
@@ -97,23 +97,23 @@ class TestModulePage(QWidget):
         self.stacked_layout.addWidget(self.weight_module_page)
 
         # 多執行序
-        # self.thread_pool = QThreadPool()
-        #
-        # self.depth_camera_worker = DepthCameraWorker()
-        # self.depth_camera_worker.signals.data.connect(self.show_image)
-        #
-        # self.thread_pool.start(self.depth_camera_worker)
-        #
-        # # Led
-        # self.led_controller = LedController(
-        #     channel_r=self.config.getint('led', 'channel_r'),
-        #     channel_b=self.config.getint('led', 'channel_b'),
-        #     channel_g=self.config.getint('led', 'channel_g')
-        # )
+        self.thread_pool = QThreadPool()
+        
+        self.depth_camera_worker = DepthCameraWorker()
+        self.depth_camera_worker.signals.data.connect(self.show_image)
+        
+        self.thread_pool.start(self.depth_camera_worker)
+        
+        # Led
+        self.led_controller = LedController(
+            channel_r=self.config.getint('led', 'channel_r'),
+            channel_b=self.config.getint('led', 'channel_b'),
+            channel_g=self.config.getint('led', 'channel_g')
+        )
 
         self.led_timer = QTimer()
         self.led_timer.setInterval(1000)
-        # self.led_timer.timeout.connect(self.led_handler)
+        self.led_timer.timeout.connect(self.led_handler)
         self.led_status = 0
 
         # Depth
@@ -126,7 +126,14 @@ class TestModulePage(QWidget):
         self.weight_timer = QTimer()
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)
+
+
+        self.weight_sum_timer = QTimer()
+        self.weight_sum_timer.setInterval(100)
+        self.weight_sum_timer.timeout.connect(self.weight_sum_handler)
+
         self.weight = 0
+        self.read_times = 60
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
@@ -157,22 +164,22 @@ class TestModulePage(QWidget):
         self.weight_reader.read()
         self.weight_module_page.set_weight(self.weight_reader.val)
 
-    def calibrate(self):
+    def weight_sum_handler(self):
+        self.weight_reader.read()
+        self.weight_module_page.set_weight(self.weight_reader.val)
+        self.weight += self.weight_reader.val
+        print(self.weight_reader.val)
+
+        self.read_times -= 1
+        if self.read_times == 0:
+            self.read_times = 60
+            self.weight_sum_timer.stop()
+
+    def read_empty_value(self):
         self.weight_timer.stop()
         self.weight_reader.reset()
 
-        read_times = 60
-
-        origin_val = 0
-        for i in range(read_times):
-            self.weight_reader.read(debug=True)
-            self.weight_module_page.set_weight(self.weight_reader.val)
-            origin_val += self.weight_reader.val
-            time.sleep(0.1)
-
-        origin_val /= read_times
-
-        print(origin_val)
+        self.weight_sum_timer.start()
 
 
 class DepthCameraPage(QWidget):
@@ -369,6 +376,28 @@ class WeightModulePage(QWidget):
         self.btn_clear.setStyleSheet(self.btn_clear.BTN_STYLE.format(**self.btn_clear.GREEN))
         self.btn_clear.clicked.connect(self.calibrate)
 
+        # loading area
+        self.calibrate_loading_widget = QWidget(self)
+
+        # Create loading view
+        self.loading_view = QLabel('', self.calibrate_loading_widget)
+        self.loading_view.setAlignment(QtCore.Qt.AlignCenter)
+
+        # Loading the GIF
+        self.movie = QMovie(r'resource/loading.gif')
+        self.loading_view.setMovie(self.movie)
+        self.loading_view.resize(self.loading_view.sizeHint())
+        self.loading_view.setGeometry(QtCore.QRect(size[0] // 2 - 250, 0, 500, 500))
+
+        self.movie.start()
+
+        # Create message
+        self.message = QLabel('處理中，請稍後', self.calibrate_loading_widget)
+        self.message.setStyleSheet('color: #2E75B6; font: 36px 微軟正黑體;')
+        self.message.resize(self.message.sizeHint())
+        self.message.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
+        self.message.setGeometry(QtCore.QRect(size[0] // 2 - self.message.width()//2, 500, self.message.width(), self.message.height()))
+
         # input area
         self.calibrate_input_widget = QWidget(self)
 
@@ -389,6 +418,7 @@ class WeightModulePage(QWidget):
         self.key_board.output_signal.connect(self.set_calibrate_weight)
         self.key_board.calibrate_signal.connect(self.calibrate)
 
+        self.stacked_layout.addWidget(self.calibrate_loading_widget)
         self.stacked_layout.addWidget(self.calibrate_clear_widget)
         self.stacked_layout.addWidget(self.calibrate_input_widget)
 
@@ -401,7 +431,6 @@ class WeightModulePage(QWidget):
 
     def calibrate(self):
         self.calibrate_signal.emit()
-        print(float(self.calibrate_weight))
 
 
 class KeyBoard(QWidget):
