@@ -130,10 +130,11 @@ class TestModulePage(QWidget):
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
             self.led_timer.start()
-        elif component == COMPONENT_NAME.WEIGHT:
-            self.weight_timer.start()
         else:
             self.led_timer.stop()
+        if component == COMPONENT_NAME.WEIGHT:
+            self.weight_timer.start()
+        else:    
             self.weight_timer.stop()
 
         self.stacked_layout.setCurrentIndex(component)
@@ -148,7 +149,7 @@ class TestModulePage(QWidget):
 
     def led_handler(self):
         self.led_module_page.set_status(self.led_status)
-        self.led_controller.set_value(*json.loads(self.config.get('led', self.led_status)))
+        self.led_controller.set_value(*json.loads(self.config.get('led', self.LED_STATUS[self.led_status])))
         self.led_status = (self.led_status + 1) % 3
 
     def weight_handler(self):
