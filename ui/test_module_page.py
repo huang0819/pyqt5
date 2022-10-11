@@ -4,7 +4,7 @@ import time
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal, QTimer
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout
 
 import logging
 import cv2
@@ -134,7 +134,7 @@ class TestModulePage(QWidget):
             self.led_timer.stop()
         if component == COMPONENT_NAME.WEIGHT:
             self.weight_timer.start()
-        else:    
+        else:
             self.weight_timer.stop()
 
         self.stacked_layout.setCurrentIndex(component)
@@ -269,34 +269,6 @@ class DepthCameraWorker(QRunnable):
         finally:
             self.signals.finished.emit()
 
-
-class LedWorkerSignals(QObject):
-    finished = pyqtSignal()
-    data = pyqtSignal(np.ndarray, np.ndarray)
-
-
-class LedCameraWorker(QRunnable):
-    def __init__(self):
-        super(LedCameraWorker, self).__init__()
-
-        self.signals = LedWorkerSignals()
-        # self.depth_camera = DepthCamera()
-
-        self.count = 0
-
-    @pyqtSlot()
-    def run(self):
-        try:
-            while True:
-                self.count += 1
-                self.signals.data.emit(self.count)
-                time.sleep(1)
-        except:
-            logging.error("[DEPTH CAMERA WORKER] catch an exception.", exc_info=True)
-        finally:
-            self.signals.finished.emit()
-
-
 class WeightModulePage(QWidget):
     FONT = QtGui.QFont('微軟正黑體', 36)
     COLOR_LIST = [
@@ -326,8 +298,8 @@ class WeightModulePage(QWidget):
 
         self.setGeometry(QtCore.QRect(*start, *size))
 
+        # sensor value display
         self.weight_info = '重量: {:.3f} 公克'
-
         self.label_weight = QLabel(self.weight_info.format(0), self)
         self.label_weight.setFont(self.FONT)
         self.label_weight.resize(800, 100)
@@ -335,5 +307,125 @@ class WeightModulePage(QWidget):
             QtCore.QRect(size[0] // 2 - 400, 0, self.label_weight.width(), self.label_weight.height()))
         self.label_weight.setAlignment(QtCore.Qt.AlignCenter)
 
+        # title of calibrate area
+        self.label_calibrate = QLabel('感測器校正', self)
+        self.label_calibrate.setFont(self.FONT)
+        self.label_calibrate.resize(self.label_calibrate.sizeHint())
+        self.label_calibrate.setGeometry(
+            QtCore.QRect(0, 130, self.label_calibrate.width(), self.label_calibrate.height()))
+        self.label_calibrate.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+
+        # line
+        self.line = QFrame(self)
+        self.line.setFrameShape(QFrame.HLine)
+        self.line.setFrameShadow(QFrame.Sunken)
+        self.line.setStyleSheet('background-color: #4472C4')
+        self.line.setGeometry(
+            QtCore.QRect(0, 130 + self.label_calibrate.height(), self.width() - 20, 3))
+
+        # weight of calibrate object
+        self.calibrate_weight = 0
+        self.calibrate_weight_info = '請輸入校正物之重量: {} 公克'
+        self.label_calibrate_weight = QLabel(self.calibrate_weight_info.format(self.calibrate_weight), self)
+        self.label_calibrate_weight.setFont(self.FONT)
+        self.label_calibrate_weight.resize(self.width(), 80)
+        self.label_calibrate_weight.setGeometry(
+            QtCore.QRect(0, 140 + self.label_weight.height(), self.label_calibrate_weight.width(),
+                         self.label_calibrate_weight.height()))
+        self.label_calibrate_weight.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+
+        self.key_board = KeyBoard(self, (
+            size[0] // 2 - 400, 160 + self.label_weight.height() + self.label_calibrate_weight.height()), (800, 560))
+
+        self.key_board.output_signal.connect(self.set_calibrate_weight)
+        self.key_board.calibrate_signal.connect(self.calibrate)
+
     def set_weight(self, weight):
         self.label_weight.setText(self.weight_info.format(weight))
+
+    def set_calibrate_weight(self, weight):
+        self.calibrate_weight = weight
+        self.label_calibrate_weight.setText(self.calibrate_weight_info.format(weight))
+
+    def calibrate(self):
+        print(float(self.calibrate_weight))
+
+
+class KeyBoard(QWidget):
+    output_signal = pyqtSignal(str)
+    calibrate_signal = pyqtSignal()
+    FONT = QtGui.QFont('微軟正黑體', 36)
+    COMMANDS_NUM = 0
+    COMMANDS_DOT = 1
+    COMMANDS_DEL = 2
+    COMMANDS_CAL = 3
+
+    def __init__(self, parent, start, size):
+        super(KeyBoard, self).__init__()
+
+        self.setParent(parent)
+        self.setGeometry(QtCore.QRect(*start, *size))
+
+        self.grid_layout = QGridLayout(self)
+        self.grid_layout.setSpacing(20)
+
+        self.output = ''
+
+        self.btn_nums = []
+
+        for i in range(10):
+            self.btn_nums.append(KeyBoardBtn(str(i), (150, 120), self.COMMANDS_NUM, data=i))
+            self.btn_nums[i].clicked_signal.connect(self.command_handler)
+
+            if i == 0:
+                self.grid_layout.addWidget(self.btn_nums[i], 3, 0, 1, 2)
+            else:
+                self.grid_layout.addWidget(self.btn_nums[i], (i - 1) // 3, (i - 1) % 3, 1, 1)
+
+        self.bnt_dot = KeyBoardBtn('.', (150, 120), self.COMMANDS_DOT, data=None)
+        self.bnt_dot.clicked_signal.connect(self.command_handler)
+        self.grid_layout.addWidget(self.bnt_dot, 3, 2, 1, 1)
+
+        self.bnt_del = KeyBoardBtn('Del', (150, 260), self.COMMANDS_DEL, data=None)
+        self.bnt_del.clicked_signal.connect(self.command_handler)
+        self.grid_layout.addWidget(self.bnt_del, 0, 3, 2, 1)
+
+        self.bnt_calibrate = KeyBoardBtn('校\n正', (150, 260), self.COMMANDS_CAL, data=None)
+        self.bnt_calibrate.clicked_signal.connect(self.command_handler)
+        self.grid_layout.addWidget(self.bnt_calibrate, 2, 3, 2, 1)
+
+    def command_handler(self, obj):
+        if obj['cmd'] == self.COMMANDS_NUM:
+            self.output += str(obj['data'])
+        elif obj['cmd'] == self.COMMANDS_DOT:
+            if self.output.find('.') == -1:
+                self.output += '.'
+        elif obj['cmd'] == self.COMMANDS_DEL:
+            if len(self.output) > 0:
+                self.output = self.output[:-1]
+        elif obj['cmd'] == self.COMMANDS_CAL:
+            self.calibrate_signal.emit()
+
+        self.output_signal.emit(self.output)
+
+
+class KeyBoardBtn(QPushButton):
+    FONT = QtGui.QFont('微軟正黑體', 36)
+    clicked_signal = pyqtSignal(dict)
+
+    def __init__(self, text, size, command, data):
+        super(KeyBoardBtn, self).__init__()
+
+        self.command = command
+        self.data = data
+
+        self.setText(text)
+        self.setFont(self.FONT)
+        self.setMinimumSize(*size)
+        self.clicked.connect(self.btn_handler)
+
+    def btn_handler(self):
+        self.clicked_signal.emit({
+            'cmd': self.command,
+            'data': self.data
+        })
