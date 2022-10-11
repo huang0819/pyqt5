@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 
 from utils.depth_camera import DepthCamera
+from utils.weight_reader import WeightReader
 
 
 class COMPONENT_NAME:
@@ -77,6 +78,7 @@ class TestModulePage(QWidget):
         self.btn_led = Button(self, 'LED模組', (0, 300), (500, 200))
         self.btn_led.clicked.connect(lambda: self.change_component(COMPONENT_NAME.LED))
         self.btn_weight = Button(self, '重量感測器', (0, 600), (500, 200))
+        self.btn_weight.clicked.connect(lambda: self.change_component(COMPONENT_NAME.WEIGHT))
 
         self.component_area = QWidget(self)
         self.component_area.setGeometry(QtCore.QRect(580, 0, 1300, 900))
@@ -84,10 +86,12 @@ class TestModulePage(QWidget):
         self.stacked_layout = QStackedLayout(self.component_area)
         self.depth_camera_page = DepthCameraPage(self, (0, 0), (1300, 900))
         self.led_module_page = LEDModulePage(self, (0, 0), (1300, 900))
+        self.weight_module_page = WeightModulePage(self, (0, 0), (1300, 900))
 
         self.stacked_layout.addWidget(QWidget(self))
         self.stacked_layout.addWidget(self.depth_camera_page)
         self.stacked_layout.addWidget(self.led_module_page)
+        self.stacked_layout.addWidget(self.weight_module_page)
 
         # 多執行序
         self.thread_pool = QThreadPool()
@@ -98,18 +102,27 @@ class TestModulePage(QWidget):
         self.thread_pool.start(self.depth_camera_worker)
 
         # Led
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.led_handler)
+        self.led_timer = QTimer()
+        self.led_timer.setInterval(1000)
+        self.led_timer.timeout.connect(self.led_handler)
         self.led_status = 0
+
+        # Depth
+        self.weight_timer = QTimer()
+        self.weight_timer.setInterval(100)
+        self.weight_timer.timeout.connect(self.weight_handler)
+        self.weight = 0
 
         # self.thread_pool.start(self.weight_reader_worker)
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
-            self.timer.start()
+            self.led_timer.start()
+        elif component == COMPONENT_NAME.WEIGHT:
+            self.weight_timer.start()
         else:
-            self.timer.stop()
+            self.led_timer.stop()
+            self.weight_timer.stop()
 
         self.stacked_layout.setCurrentIndex(component)
 
@@ -126,6 +139,10 @@ class TestModulePage(QWidget):
         self.led_signal.emit(self.LED_STATUS[self.led_status])
 
         self.led_status = (self.led_status + 1) % 3
+
+    def weight_handler(self):
+        self.weight_reader.read()
+        self.weight_module_page.set_weight(self.weight_reader.weight_reader.val)
 
 
 class DepthCameraPage(QWidget):
@@ -266,3 +283,45 @@ class LedCameraWorker(QRunnable):
             logging.error("[DEPTH CAMERA WORKER] catch an exception.", exc_info=True)
         finally:
             self.signals.finished.emit()
+
+
+class WeightModulePage(QWidget):
+    FONT = QtGui.QFont('微軟正黑體', 36)
+    COLOR_LIST = [
+        {
+            'name': 'BLUE',
+            'color': '#2E75B6'
+        },
+        {
+            'name': 'GREEN',
+            'color': '#548235'
+        },
+        {
+            'name': 'RED',
+            'color': '#d73131'
+        }
+    ]
+
+    LABEL_STYLE = """
+                QLabel{{
+                  color: {color};
+                }}"""
+
+    def __init__(self, parent, start, size):
+        super(WeightModulePage, self).__init__()
+
+        self.setParent(parent)
+
+        self.setGeometry(QtCore.QRect(*start, *size))
+
+        self.weight_info = '重量: {:.3f} 公克'
+
+        self.label_weight = QLabel(self.weight_info.format(0), self)
+        self.label_weight.setFont(self.FONT)
+        self.label_weight.resize(800, 100)
+        self.label_weight.setGeometry(
+            QtCore.QRect(size[0] // 2 - 400, 0, self.label_weight.width(), self.label_weight.height()))
+        self.label_weight.setAlignment(QtCore.Qt.AlignCenter)
+
+    def set_weight(self, weight):
+        self.label_weight.setText(self.weight_info.format(weight))

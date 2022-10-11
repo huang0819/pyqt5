@@ -13,7 +13,6 @@ from ui.main_page import Ui_MainWindow
 from ui.test_module_page import TestModulePage
 
 from utils.led import LedController
-# from worker.weight_worker import WeightReaderWorker
 
 CODE_VERSION = '1.0.0'
 
