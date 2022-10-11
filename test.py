@@ -1,6 +1,5 @@
 import argparse
 import datetime
-import json
 import os
 import sys
 import logging
@@ -12,7 +11,6 @@ from ui.config import UI_PAGE_NAME
 from ui.main_page import Ui_MainWindow
 from ui.test_module_page import TestModulePage
 
-from utils.led import LedController
 
 CODE_VERSION = '1.0.0'
 
@@ -28,12 +26,6 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.config = config
-        # led control
-        self.led_controller = LedController(
-            channel_r=self.config.getint('led', 'channel_r'),
-            channel_b=self.config.getint('led', 'channel_b'),
-            channel_g=self.config.getint('led', 'channel_g')
-        )
 
         # ui setup
         self.main_window = Ui_MainWindow()
@@ -44,7 +36,6 @@ class MainWindow(QMainWindow):
         self.showFullScreen()
 
         self.test_module_page = TestModulePage(self.config)
-        self.test_module_page.led_signal.connect(self.set_led_status)
 
         self.set_title_text(f"測試裝置")
 
@@ -57,9 +48,6 @@ class MainWindow(QMainWindow):
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
-
-    def set_led_status(self, status):
-        self.led_controller.set_value(*json.loads(config.get('led', status)))
 
     def save_config(self, data):
         for section, value in data.items():

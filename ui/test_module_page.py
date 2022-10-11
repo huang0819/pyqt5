@@ -1,3 +1,4 @@
+import json
 import time
 
 from PyQt5 import QtCore, QtGui
@@ -10,6 +11,7 @@ import cv2
 import numpy as np
 
 from utils.depth_camera import DepthCamera
+from utils.led import LedController
 from utils.weight_reader import WeightReader
 
 
@@ -102,6 +104,12 @@ class TestModulePage(QWidget):
         self.thread_pool.start(self.depth_camera_worker)
 
         # Led
+        self.led_controller = LedController(
+            channel_r=self.config.getint('led', 'channel_r'),
+            channel_b=self.config.getint('led', 'channel_b'),
+            channel_g=self.config.getint('led', 'channel_g')
+        )
+
         self.led_timer = QTimer()
         self.led_timer.setInterval(1000)
         self.led_timer.timeout.connect(self.led_handler)
@@ -118,8 +126,6 @@ class TestModulePage(QWidget):
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)
         self.weight = 0
-
-        # self.thread_pool.start(self.weight_reader_worker)
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
@@ -142,8 +148,7 @@ class TestModulePage(QWidget):
 
     def led_handler(self):
         self.led_module_page.set_status(self.led_status)
-        self.led_signal.emit(self.LED_STATUS[self.led_status])
-
+        self.led_controller.set_value(*json.loads(self.config.get('led', self.led_status)))
         self.led_status = (self.led_status + 1) % 3
 
     def weight_handler(self):
