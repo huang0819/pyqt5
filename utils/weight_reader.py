@@ -27,7 +27,7 @@ class WeightReader:
 
             self.hx.power_down()
             self.hx.power_up()
-            time.sleep(0.1)
+            time.sleep(0.05)
         
         self.hx.tare()
 
@@ -36,8 +36,11 @@ class WeightReader:
     def cleanAndExit(self):
         GPIO.cleanup()
 
-    def read(self):
-        self.val = max(0, self.hx.get_weight(5))
+    def read(self, debug=False):
+        if debug:
+            self.val = self.hx.get_weight(5)
+        else:
+            self.val = max(0, self.hx.get_weight(5))
         self.hx.power_down()
         self.hx.power_up()
 
@@ -63,3 +66,80 @@ class WeightReader:
             self.hx.power_down()
             self.hx.power_up()
             time.sleep(0.1)
+
+    def reset(self):
+        self.hx.reset()
+        self.hx.set_offset(0)
+        self.hx.set_reference_unit(1)
+
+    def read_empty_value(self):
+        logging.info(f"[WEIGHT] reference {self.hx.get_reference_unit()}")
+        logging.info(f"[WEIGHT] offset {self.hx.get_offset()}")
+
+        read_times = 60
+
+        origin_val = 0
+        for i in range(read_times):
+            self.read(debug=True)
+            origin_val += self.val
+            time.sleep(0.1)
+
+        origin_val /= read_times
+        return origin_val
+
+    # def calibrate(self):
+    #     self.hx.set_offset(0)
+    #     self.hx.set_reference_unit(1)
+    #
+    #     logging.info(f"[WEIGHT] reference {self.hx.get_reference_unit()}")
+    #     logging.info(f"[WEIGHT] offset {self.hx.get_offset()}")
+    #
+    #     print('Remove anything on cell load')
+    #     _ = input('Press any key to continue')
+    #
+    #     read_times = 60
+    #
+    #     origin_val = 0
+    #     for i in range(read_times):
+    #         val = self.hx.get_weight(5)
+    #         self.hx.power_down()
+    #         self.hx.power_up()
+    #         print('\r{} / {}: {}'.format(i + 1, read_times, val), end='', flush=True)
+    #         origin_val += val
+    #         time.sleep(0.1)
+    #
+    #     origin_val /= read_times
+    #     print('\norigin value', origin_val)
+    #
+    #     print('Put the known weight object on load cell')
+    #     real_weight = input('Enter the weight: ')
+    #
+    #     # warm up
+    #     for _ in range(15):
+    #         _ = hx.get_weight(5)
+    #
+    #         hx.power_down()
+    #         hx.power_up()
+    #         time.sleep(0.1)
+    #
+    #     changed_val = 0
+    #     for i in range(read_times):
+    #         val = hx.get_weight(5)
+    #
+    #         print('\r{} / {}: {}'.format(i + 1, read_times, val), end='', flush=True)
+    #
+    #         hx.power_down()
+    #         hx.power_up()
+    #         time.sleep(0.1)
+    #
+    #         changed_val += val
+    #
+    #     changed_val /= read_times
+    #     print('\nchanged value', changed_val)
+    #
+    #     delta = changed_val - origin_val
+    #     reference_unit = delta / float(real_weight)
+    #
+    #     print('reference unit: ', reference_unit)
+    #
+    #     GPIO.cleanup()

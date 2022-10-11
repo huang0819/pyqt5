@@ -89,6 +89,7 @@ class TestModulePage(QWidget):
         self.depth_camera_page = DepthCameraPage(self, (0, 0), (1300, 900))
         self.led_module_page = LEDModulePage(self, (0, 0), (1300, 900))
         self.weight_module_page = WeightModulePage(self, (0, 0), (1300, 900))
+        self.weight_module_page.calibrate_signal.connect(self.calibrate)
 
         self.stacked_layout.addWidget(QWidget(self))
         self.stacked_layout.addWidget(self.depth_camera_page)
@@ -96,23 +97,23 @@ class TestModulePage(QWidget):
         self.stacked_layout.addWidget(self.weight_module_page)
 
         # 多執行序
-        self.thread_pool = QThreadPool()
-
-        self.depth_camera_worker = DepthCameraWorker()
-        self.depth_camera_worker.signals.data.connect(self.show_image)
-
-        self.thread_pool.start(self.depth_camera_worker)
-
-        # Led
-        self.led_controller = LedController(
-            channel_r=self.config.getint('led', 'channel_r'),
-            channel_b=self.config.getint('led', 'channel_b'),
-            channel_g=self.config.getint('led', 'channel_g')
-        )
+        # self.thread_pool = QThreadPool()
+        #
+        # self.depth_camera_worker = DepthCameraWorker()
+        # self.depth_camera_worker.signals.data.connect(self.show_image)
+        #
+        # self.thread_pool.start(self.depth_camera_worker)
+        #
+        # # Led
+        # self.led_controller = LedController(
+        #     channel_r=self.config.getint('led', 'channel_r'),
+        #     channel_b=self.config.getint('led', 'channel_b'),
+        #     channel_g=self.config.getint('led', 'channel_g')
+        # )
 
         self.led_timer = QTimer()
         self.led_timer.setInterval(1000)
-        self.led_timer.timeout.connect(self.led_handler)
+        # self.led_timer.timeout.connect(self.led_handler)
         self.led_status = 0
 
         # Depth
@@ -155,6 +156,23 @@ class TestModulePage(QWidget):
     def weight_handler(self):
         self.weight_reader.read()
         self.weight_module_page.set_weight(self.weight_reader.val)
+
+    def calibrate(self):
+        self.weight_timer.stop()
+        self.weight_reader.reset()
+
+        read_times = 60
+
+        origin_val = 0
+        for i in range(read_times):
+            self.weight_reader.read(debug=True)
+            self.weight_module_page.set_weight(self.weight_reader.val)
+            origin_val += self.weight_reader.val
+            time.sleep(0.1)
+
+        origin_val /= read_times
+
+        print(origin_val)
 
 
 class DepthCameraPage(QWidget):
@@ -269,7 +287,10 @@ class DepthCameraWorker(QRunnable):
         finally:
             self.signals.finished.emit()
 
+
 class WeightModulePage(QWidget):
+    calibrate_signal = pyqtSignal()
+
     FONT = QtGui.QFont('微軟正黑體', 36)
     COLOR_LIST = [
         {
@@ -290,6 +311,10 @@ class WeightModulePage(QWidget):
                 QLabel{{
                   color: {color};
                 }}"""
+
+    COMPONENT_CLEAR = 0
+    COMPONENT_INPUT = 1
+    COMPONENT_WAIT = 1
 
     def __init__(self, parent, start, size):
         super(WeightModulePage, self).__init__()
@@ -323,22 +348,49 @@ class WeightModulePage(QWidget):
         self.line.setGeometry(
             QtCore.QRect(0, 130 + self.label_calibrate.height(), self.width() - 20, 3))
 
+        # calibrate area
+        self.calibrate_area = QWidget(self)
+        self.calibrate_area.setGeometry(QtCore.QRect(0, 140 + self.label_weight.height(), self.width(),
+                                                     self.height() - 140 + self.label_weight.height()))
+        self.stacked_layout = QStackedLayout(self.calibrate_area)
+
+        # clear area
+        self.calibrate_clear_widget = QWidget(self)
+        self.label_clear = QLabel('請將拍攝平面物體全部移除後，按下 "開始校正" 按鈕', self.calibrate_clear_widget)
+        self.label_clear.setWordWrap(True)
+        self.label_clear.setFont(QtGui.QFont('微軟正黑體', 32))
+        self.label_clear.resize(1300, 100)
+        self.label_clear.setGeometry(
+            QtCore.QRect(0, 0, self.label_clear.width(), self.label_clear.height()))
+        self.label_clear.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.label_clear.setStyleSheet(self.LABEL_STYLE.format(**self.COLOR_LIST[2]))
+
+        self.btn_clear = Button(self.calibrate_clear_widget, '開始校正', (size[0] // 2 - 250, 280), (500, 200))
+        self.btn_clear.setStyleSheet(self.btn_clear.BTN_STYLE.format(**self.btn_clear.GREEN))
+        self.btn_clear.clicked.connect(self.calibrate)
+
+        # input area
+        self.calibrate_input_widget = QWidget(self)
+
         # weight of calibrate object
         self.calibrate_weight = 0
         self.calibrate_weight_info = '請輸入校正物之重量: {} 公克'
-        self.label_calibrate_weight = QLabel(self.calibrate_weight_info.format(self.calibrate_weight), self)
+        self.label_calibrate_weight = QLabel(self.calibrate_weight_info.format(self.calibrate_weight),
+                                             self.calibrate_input_widget)
         self.label_calibrate_weight.setFont(self.FONT)
         self.label_calibrate_weight.resize(self.width(), 80)
         self.label_calibrate_weight.setGeometry(
-            QtCore.QRect(0, 140 + self.label_weight.height(), self.label_calibrate_weight.width(),
-                         self.label_calibrate_weight.height()))
+            QtCore.QRect(0, 0, self.label_calibrate_weight.width(), self.label_calibrate_weight.height()))
         self.label_calibrate_weight.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
 
-        self.key_board = KeyBoard(self, (
-            size[0] // 2 - 400, 160 + self.label_weight.height() + self.label_calibrate_weight.height()), (800, 560))
+        self.key_board = KeyBoard(self.calibrate_input_widget, (
+            size[0] // 2 - 400, 20 + self.label_calibrate_weight.height()), (800, 560))
 
         self.key_board.output_signal.connect(self.set_calibrate_weight)
         self.key_board.calibrate_signal.connect(self.calibrate)
+
+        self.stacked_layout.addWidget(self.calibrate_clear_widget)
+        self.stacked_layout.addWidget(self.calibrate_input_widget)
 
     def set_weight(self, weight):
         self.label_weight.setText(self.weight_info.format(weight))
@@ -348,6 +400,7 @@ class WeightModulePage(QWidget):
         self.label_calibrate_weight.setText(self.calibrate_weight_info.format(weight))
 
     def calibrate(self):
+        self.calibrate_signal.emit()
         print(float(self.calibrate_weight))
 
 
