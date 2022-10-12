@@ -242,6 +242,12 @@ class TestModulePage(QWidget):
         self.weight_timer.start()
         self.weight_module_page.change_component(self.weight_module_page.COMPONENT_CLEAR)
 
+    def exit_handler(self):
+        self.depth_camera_worker.set_stop(True)
+        self.led_timer.stop()
+        self.weight_timer.stop()
+        self.weight_sum_timer.stop()
+
 
 class DepthCameraPage(QWidget):
     def __init__(self, parent, start, size):
@@ -335,11 +341,12 @@ class DepthCameraWorker(QRunnable):
 
         self.signals = DepthCameraWorkerSignals()
         self.depth_camera = DepthCamera()
+        self.stop = False
 
     @pyqtSlot()
     def run(self):
         try:
-            while True:
+            while not self.stop:
                 image, depth = self.depth_camera.read()
                 if image is not None and depth is not None:
                     rgb_image = np.copy(image[:, :, ::-1])
@@ -352,6 +359,9 @@ class DepthCameraWorker(QRunnable):
             logging.error("[DEPTH CAMERA WORKER] catch an exception.", exc_info=True)
         finally:
             self.signals.finished.emit()
+
+    def set_stop(self, stop):
+        self.stop = stop
 
 
 class WeightModulePage(QWidget):

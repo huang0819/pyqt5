@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         logging.info('[MAIN] save config')
 
     def exit_handler(self):
+        self.test_module_page.exit_handler()
         self.close()
         logging.info('*** Close application ***')
 
