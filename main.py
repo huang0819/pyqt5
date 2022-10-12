@@ -28,6 +28,7 @@ from worker.upload_worker import UploadWorker
 CODE_VERSION = '1.0.1'
 
 CONFIG_PATH = r'config/config.ini'
+USER_LIST_PATH = r'config/user_list.json'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-sl', '--show_log', action='store_true', help='show message in terminal')
@@ -237,10 +238,10 @@ class MainWindow(QMainWindow):
         )
         
         if status_code == 200:
-            with open(r'config/user_list.json', 'w', encoding='utf8') as outfile:
+            with open(USER_LIST_PATH, 'w', encoding='utf8') as outfile:
                 json.dump(user_list, outfile, indent=4, ensure_ascii=False)
-        elif os.path.isfile(r'config/user_list.json'):
-            with open(r'config/user_list.json') as json_file:
+        elif os.path.isfile(USER_LIST_PATH):
+            with open(USER_LIST_PATH) as json_file:
                 user_list = json.load(json_file)
 
         self.user_select.set_user_btn_page(user_list)

@@ -2,12 +2,14 @@ import logging
 import time
 
 from PyQt5.QtCore import QRunnable, pyqtSlot, QObject, pyqtSignal
+
 from utils.weight_reader import WeightReader
 
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     data = pyqtSignal(float)
+
 
 class WeightReaderWorker(QRunnable):
     def __init__(self, **kwargs):
