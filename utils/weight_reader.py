@@ -13,13 +13,12 @@ class WeightReader:
         self.hx.set_reading_format('MSB', 'MSB')
         self.reference_unit = reference_unit
 
-        self.setup()
 
     def setup(self):
         self.val = 0
         self.hx.set_reference_unit(self.reference_unit)
         self.hx.reset()
-        self.hx.tare(100)
+        self.hx.tare(50)
 
         logging.info('[WEIGHT] setup module')
 

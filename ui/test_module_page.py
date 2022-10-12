@@ -124,6 +124,8 @@ class TestModulePage(QWidget):
             reference_unit=self.config.getfloat('weight', 'reference_unit')
         )
 
+        self.weight_reader.setup()
+
         # Weight
         self.weight_timer = QTimer()
         self.weight_timer.setInterval(100)

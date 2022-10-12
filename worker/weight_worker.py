@@ -24,6 +24,8 @@ class WeightReaderWorker(QRunnable):
             reference_unit=(self.kwargs['reference_unit'])
         )
 
+        self.weight_reader.setup()
+
     @pyqtSlot()
     def run(self):
         try:
