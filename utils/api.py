@@ -79,15 +79,17 @@ class Api:
         headers = {}
 
         user_list = []
+        status_code = 0
 
         try:
             response = requests.request("GET", url, headers=headers, data=payload)
+            status_code = response.status_code
             if response.status_code == 200:
                 user_list = response.json()['data']['profiles']
                 logging.info(f'[API] {url} success')
             else:
                 logging.warning(f'[API] {url} failed')
-
-            return user_list
         except Exception as e:
             logging.error(e)
+
+        return status_code, user_list

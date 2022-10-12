@@ -25,7 +25,7 @@ from worker.camera_worker import DepthCameraWorker
 from worker.weight_worker import WeightReaderWorker
 from worker.upload_worker import UploadWorker
 
-CODE_VERSION = '1.0.0'
+CODE_VERSION = '1.0.1'
 
 CONFIG_PATH = r'config/config.ini'
 
@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
 
         # setting page
         self.setting_page = SettingPage()
-        self.setting_page.save_signal.connect(self.save_config)
+        self.setting_page.save_signal.connect(self.save_handler)
 
         # stack layout
         self.qls = QStackedLayout()
@@ -230,13 +230,26 @@ class MainWindow(QMainWindow):
         self.user_control.image_view.setPixmap(QPixmap.fromImage(qimg))
 
     def set_user_list(self):
-        user_list = self.api.fetch_user_list(
+        status_code, user_list = self.api.fetch_user_list(
             school_id=self.config.getint('school', 'id'),
             grade=self.config.getint('school', 'grade'),
             class_name=self.config.getint('school', 'class')
         )
-        self.user_select.set_user_btn_page(user_list)
+        
+        if status_code == 200:
+            with open(r'config/user_list.json', 'w', encoding='utf8') as outfile:
+                json.dump(user_list, outfile, indent=4, ensure_ascii=False)
+        elif os.path.isfile(r'config/user_list.json'):
+            with open(r'config/user_list.json') as json_file:
+                user_list = json.load(json_file)
 
+        self.user_select.set_user_btn_page(user_list)
+    
+    def save_handler(self, data):
+        self.save_config(data)
+        self.set_user_list()
+        self.change_page(UI_PAGE_NAME.USER_SELECT)
+        
     def save_config(self, data):
         for section, value in data.items():
             for attr, val in value.items():
@@ -246,10 +259,6 @@ class MainWindow(QMainWindow):
             self.config.write(config_file)
 
         logging.info('[MAIN] save config')
-
-        self.set_user_list()
-
-        self.change_page(UI_PAGE_NAME.USER_SELECT)
 
     def exit_handler(self):
         self.led_controller.clear_GPIO()
