@@ -18,7 +18,7 @@ from ui.setting_page import SettingPage
 from ui.user_control import UserControl
 from ui.user_select import UserSelect
 from utils.api import Api
-from utils.led import LedController
+from utils.led import LedController, LED_STATUS
 from utils.worker import Worker
 from worker.camera_worker import DepthCameraWorker
 from worker.upload_worker import UploadWorker
@@ -40,6 +40,10 @@ class MainWindow(QMainWindow):
 
         self.config = config
         self.api = Api(config.get('api', 'base_url'))
+        self.status = LED_STATUS.SETUP
+
+        # 多執行序
+        self.thread_pool = QThreadPool()
 
         # Create data folder
         self.save_folder = os.path.join(self.config.get('path', 'save_dir'), datetime.datetime.now().strftime("%Y%m%d"))
@@ -55,23 +59,19 @@ class MainWindow(QMainWindow):
             channel_b=self.config.getint('led', 'channel_b'),
             channel_g=self.config.getint('led', 'channel_g')
         )
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_setup')))
+        self.change_status(LED_STATUS.SETUP)
 
         # ui setup
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
-        self.main_window.button_setting_signal.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
+        self.main_window.button_setting_signal.connect(self.set_setting_page_options)
 
         self.showFullScreen()
 
         # user select page
         self.user_select = UserSelect()
-        self.set_user_list()
         self.user_select.user_btn_click_signal.connect(self.user_button_handler)
-
-        self.set_title_text(
-            f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
 
         # user control page
         self.user_control = UserControl()
@@ -107,8 +107,9 @@ class MainWindow(QMainWindow):
 
         self.user_buttons = []
 
-        # 多執行序
-        self.thread_pool = QThreadPool()
+        self.set_user_list()
+        self.set_title_text(
+            f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
 
         # 計數器，間隔一秒再存資料
         self.timer = QTimer()
@@ -126,6 +127,10 @@ class MainWindow(QMainWindow):
         self.save_type = None
         self.is_upload = 0
 
+    def change_status(self, status):
+        self.status = status
+        self.led_controller.set_value(*json.loads(config.get('led', status)))
+
     def setup_sensors(self):
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
@@ -141,7 +146,7 @@ class MainWindow(QMainWindow):
 
     def finish_init(self):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+        self.change_status(LED_STATUS.IDLE)
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
@@ -232,8 +237,6 @@ class MainWindow(QMainWindow):
         elif page == UI_PAGE_NAME.MESSAGE:
             self.message_component.start()
         elif page == UI_PAGE_NAME.SETTING:
-            self.stacked_layout.setCurrentIndex(UI_PAGE_NAME.LOADING)
-            self.setting_page.set_options(self.api.fetch_schools() , self.config.items('school'))
             self.set_title_text('設定')
             self.main_window.return_button.show()
 
@@ -248,13 +251,38 @@ class MainWindow(QMainWindow):
         qimg = QImage(img.data, len_x, len_y, QImage.Format_RGB888)
         self.user_control.image_view.setPixmap(QPixmap.fromImage(qimg))
 
+    def set_setting_page_options(self):
+        self.change_page(UI_PAGE_NAME.LOADING)
+        worker = Worker(self.api.fetch_schools)
+        worker.signals.result.connect(self.fetch_schools_handler)
+        worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
+        self.change_status(LED_STATUS.BUSY)
+
+        worker.setAutoDelete(True)
+        self.thread_pool.start(worker)
+
+    def fetch_schools_handler(self, res):
+        self.setting_page.set_options(res , self.config.items('school'))
+        self.change_status(LED_STATUS.IDLE)
+
     def set_user_list(self):
-        status_code, user_list = self.api.fetch_user_list(
+        self.change_page(UI_PAGE_NAME.LOADING)
+        worker = Worker(
+            self.api.fetch_user_list,
             school_id=self.config.getint('school', 'id'),
             grade=self.config.getint('school', 'grade'),
             class_name=self.config.getint('school', 'class')
-        )
+            )
+        worker.signals.result.connect(self.fetch_user_list_handler)
+        if self.status == LED_STATUS.IDLE:
+            worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+            self.change_status(LED_STATUS.BUSY)
 
+        worker.setAutoDelete(True)
+        self.thread_pool.start(worker)        
+
+    def fetch_user_list_handler(self, res):
+        status_code, user_list = res
         if status_code == 200:
             with open(USER_LIST_PATH, 'w', encoding='utf8') as outfile:
                 json.dump(user_list, outfile, indent=4, ensure_ascii=False)
@@ -263,12 +291,13 @@ class MainWindow(QMainWindow):
                 user_list = json.load(json_file)
 
         self.user_select.set_user_btn_page(user_list)
+        if self.status == LED_STATUS.BUSY:
+            self.change_status(LED_STATUS.IDLE)
+
 
     def save_handler(self, data):
-        self.change_page(UI_PAGE_NAME.LOADING)
         self.save_config(data)
         self.set_user_list()
-        self.change_page(UI_PAGE_NAME.USER_SELECT)
 
     def save_config(self, data):
         for section, value in data.items():

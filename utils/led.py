@@ -22,3 +22,8 @@ class LedController:
 
     def clear_GPIO(self):
         GPIO.cleanup()
+
+class LED_STATUS:
+    SETUP = 'state_setup'
+    IDLE = 'state_idle'
+    BUSY = 'state_busy'
