@@ -14,6 +14,7 @@ from utils.weight_reader import WeightReader
 
 READ_TIME = 60
 
+
 class COMPONENT_NAME:
     BLANK = 0
     DEPTH_CAMERA = 1
@@ -98,12 +99,12 @@ class TestModulePage(QWidget):
 
         # 多執行序
         self.thread_pool = QThreadPool()
-        
+
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
-        
+
         self.thread_pool.start(self.depth_camera_worker)
-        
+
         # Led
         self.led_controller = LedController(
             channel_r=self.config.getint('led', 'channel_r'),
@@ -221,7 +222,7 @@ class TestModulePage(QWidget):
                 self.weight_sum_timer.stop()
             else:
                 self.weight_module_page.change_component(self.weight_module_page.COMPONENT_INPUT)
-            
+
             self.calibrate_status = (self.calibrate_status + 1) % 2
 
     def read_empty_value(self):
@@ -234,12 +235,13 @@ class TestModulePage(QWidget):
 
         self.weight_sum_timer.start()
         self.weight_module_page.change_component(self.weight_module_page.COMPONENT_WAIT)
-    
+
     def reset_weight_reader(self):
         self.weight_reader.hx.reset()
         self.weight_reader.hx.tare()
         self.weight_timer.start()
         self.weight_module_page.change_component(self.weight_module_page.COMPONENT_CLEAR)
+
 
 class DepthCameraPage(QWidget):
     def __init__(self, parent, start, size):
@@ -443,11 +445,14 @@ class WeightModulePage(QWidget):
         self.message.setStyleSheet('color: #2E75B6;')
         self.message.resize(self.message.sizeHint())
         self.message.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
-        self.message.setGeometry(QtCore.QRect(size[0] // 2 - self.message.width()//2, 230, self.message.width(), self.message.height()))
+        self.message.setGeometry(
+            QtCore.QRect(size[0] // 2 - self.message.width() // 2, 230, self.message.width(), self.message.height()))
 
         self.progress_bar = QProgressBar(self.calibrate_loading_widget)
         self.progress_bar.resize(600, 50)
-        self.progress_bar.setGeometry(QtCore.QRect(size[0] // 2 - self.progress_bar.width()//2, 320, self.progress_bar.width(), self.progress_bar.height()))
+        self.progress_bar.setGeometry(
+            QtCore.QRect(size[0] // 2 - self.progress_bar.width() // 2, 320, self.progress_bar.width(),
+                         self.progress_bar.height()))
         self.progress_bar.setStyleSheet("""
             QProgressBar{
                 border: 2px solid grey;
@@ -459,7 +464,7 @@ class WeightModulePage(QWidget):
                 width: 20px;
             }
         """)
-        
+
         # input area
         self.calibrate_input_widget = QWidget(self)
 
