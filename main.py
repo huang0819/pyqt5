@@ -78,7 +78,8 @@ class MainWindow(QMainWindow):
         self.user_control.button_click_signal.connect(self.user_control_handler)
 
         # loading component
-        self.loading_component = LoadingComponent()
+        # self.loading_component = LoadingComponent()
+        self.loading_component = MessageComponent(text='處理中，請稍後。', font_size=64, color='#2E75B6', wait_time=0)
 
         # message component
         self.message_component = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png')
@@ -117,6 +118,7 @@ class MainWindow(QMainWindow):
         # 初始化執行序
         self.init_worker = Worker(self.setup_sensors)
         self.init_worker.signals.finished.connect(self.finish_init)
+        self.init_worker.setAutoDelete(True)
         self.thread_pool.start(self.init_worker)
 
         # Params
@@ -225,11 +227,13 @@ class MainWindow(QMainWindow):
             self.set_title_text(f"您好，{self.user_data['name']}同學")
             self.main_window.return_button.show()
         elif page == UI_PAGE_NAME.LOADING:
-            self.loading_component.start()
+            # self.loading_component.start()
+            pass
         elif page == UI_PAGE_NAME.MESSAGE:
             self.message_component.start()
         elif page == UI_PAGE_NAME.SETTING:
-            self.setting_page.set_options(self.api.fetch_schools(), self.config.items('school'))
+            self.stacked_layout.setCurrentIndex(UI_PAGE_NAME.LOADING)
+            self.setting_page.set_options(self.api.fetch_schools() , self.config.items('school'))
             self.set_title_text('設定')
             self.main_window.return_button.show()
 
@@ -261,6 +265,7 @@ class MainWindow(QMainWindow):
         self.user_select.set_user_btn_page(user_list)
 
     def save_handler(self, data):
+        self.change_page(UI_PAGE_NAME.LOADING)
         self.save_config(data)
         self.set_user_list()
         self.change_page(UI_PAGE_NAME.USER_SELECT)
