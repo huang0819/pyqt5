@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
         self.showFullScreen()
 
         self.test_module_page = TestModulePage(self.config)
+        self.test_module_page.save_config_signal.connect(self.save_config)
 
         self.set_title_text(f"測試裝置")
 
@@ -58,10 +59,6 @@ class MainWindow(QMainWindow):
             self.config.write(config_file)
 
         logging.info('[MAIN] save config')
-
-        self.set_user_list()
-
-        self.change_page(UI_PAGE_NAME.USER_SELECT)
 
     def exit_handler(self):
         self.close()

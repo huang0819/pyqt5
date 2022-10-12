@@ -1,10 +1,9 @@
 import json
-import time
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal, QTimer
 from PyQt5.QtGui import QPixmap, QImage, QMovie
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout, QProgressBar
 
 import logging
 import cv2
@@ -14,6 +13,7 @@ from utils.depth_camera import DepthCamera
 from utils.led import LedController
 from utils.weight_reader import WeightReader
 
+READ_TIME = 60
 
 class COMPONENT_NAME:
     BLANK = 0
@@ -65,7 +65,7 @@ class Button(QPushButton):
 
 
 class TestModulePage(QWidget):
-    led_signal = pyqtSignal(str)
+    save_config_signal = pyqtSignal(dict)
     LED_STATUS = ['state_setup', 'state_idle', 'state_busy']
 
     def __init__(self, config):
@@ -90,6 +90,7 @@ class TestModulePage(QWidget):
         self.led_module_page = LEDModulePage(self, (0, 0), (1300, 900))
         self.weight_module_page = WeightModulePage(self, (0, 0), (1300, 900))
         self.weight_module_page.calibrate_signal.connect(self.read_empty_value)
+        self.weight_module_page.finish_signal.connect(self.reset_weight_reader)
 
         self.stacked_layout.addWidget(QWidget(self))
         self.stacked_layout.addWidget(self.depth_camera_page)
@@ -127,13 +128,20 @@ class TestModulePage(QWidget):
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)
 
-
         self.weight_sum_timer = QTimer()
         self.weight_sum_timer.setInterval(100)
         self.weight_sum_timer.timeout.connect(self.weight_sum_handler)
 
-        self.weight = 0
-        self.read_times = 60
+        self.read_times = READ_TIME
+        self.empty_value = []
+        self.object_value = []
+        self.object_weight = 0
+
+        self.calibrate_status = 0
+        """
+            0: empty
+            1: set object
+        """
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
@@ -165,22 +173,71 @@ class TestModulePage(QWidget):
         self.weight_module_page.set_weight(self.weight_reader.val)
 
     def weight_sum_handler(self):
-        self.weight_reader.read()
+        self.weight_reader.read(debug=True)
         self.weight_module_page.set_weight(self.weight_reader.val)
-        self.weight += self.weight_reader.val
-        print(self.weight_reader.val)
+
+        if self.calibrate_status == 0:
+            self.empty_value.append(self.weight_reader.val)
+        elif self.calibrate_status == 1:
+            self.object_value.append(self.weight_reader.val)
 
         self.read_times -= 1
+        self.weight_module_page.progress_bar.setValue(READ_TIME - self.read_times)
+
         if self.read_times == 0:
-            self.read_times = 60
+            self.read_times = READ_TIME
             self.weight_sum_timer.stop()
+
+            if self.calibrate_status == 0:
+                self.empty_value.sort()
+                trimAmount = int(len(self.empty_value) * 0.1)
+                self.empty_value = self.empty_value[trimAmount:-trimAmount]
+                self.empty_value = sum(self.empty_value) / len(self.empty_value)
+            elif self.calibrate_status == 1:
+                self.object_value.sort()
+                trimAmount = int(len(self.object_value) * 0.1)
+                self.object_value = self.object_value[trimAmount:-trimAmount]
+                self.object_value = sum(self.object_value) / len(self.object_value)
+
+            if self.calibrate_status == 1:
+                reference_unit = (self.object_value - self.empty_value) / self.weight_module_page.object_weight
+
+                self.save_config_signal.emit({
+                    'weight': {
+                        'reference_unit': reference_unit
+                    }
+                })
+
+                self.weight_reader.hx.set_reference_unit(reference_unit)
+
+                self.object_value = []
+                self.empty_value = []
+                self.weight_module_page.object_weight = 0
+
+                self.weight_module_page.change_component(self.weight_module_page.COMPONENT_FINISH)
+
+                self.weight_sum_timer.stop()
+            else:
+                self.weight_module_page.change_component(self.weight_module_page.COMPONENT_INPUT)
+            
+            self.calibrate_status = (self.calibrate_status + 1) % 2
 
     def read_empty_value(self):
         self.weight_timer.stop()
         self.weight_reader.reset()
 
-        self.weight_sum_timer.start()
+        self.weight_module_page.progress_bar.setValue(1)
+        self.weight_module_page.progress_bar.setMinimum(1)
+        self.weight_module_page.progress_bar.setMaximum(READ_TIME)
 
+        self.weight_sum_timer.start()
+        self.weight_module_page.change_component(self.weight_module_page.COMPONENT_WAIT)
+    
+    def reset_weight_reader(self):
+        self.weight_reader.hx.reset()
+        self.weight_reader.hx.tare()
+        self.weight_timer.start()
+        self.weight_module_page.change_component(self.weight_module_page.COMPONENT_CLEAR)
 
 class DepthCameraPage(QWidget):
     def __init__(self, parent, start, size):
@@ -297,6 +354,7 @@ class DepthCameraWorker(QRunnable):
 
 class WeightModulePage(QWidget):
     calibrate_signal = pyqtSignal()
+    finish_signal = pyqtSignal()
 
     FONT = QtGui.QFont('微軟正黑體', 36)
     COLOR_LIST = [
@@ -320,8 +378,9 @@ class WeightModulePage(QWidget):
                 }}"""
 
     COMPONENT_CLEAR = 0
-    COMPONENT_INPUT = 1
+    COMPONENT_INPUT = 2
     COMPONENT_WAIT = 1
+    COMPONENT_FINISH = 3
 
     def __init__(self, parent, start, size):
         super(WeightModulePage, self).__init__()
@@ -379,31 +438,34 @@ class WeightModulePage(QWidget):
         # loading area
         self.calibrate_loading_widget = QWidget(self)
 
-        # Create loading view
-        self.loading_view = QLabel('', self.calibrate_loading_widget)
-        self.loading_view.setAlignment(QtCore.Qt.AlignCenter)
-
-        # Loading the GIF
-        self.movie = QMovie(r'resource/loading.gif')
-        self.loading_view.setMovie(self.movie)
-        self.loading_view.resize(self.loading_view.sizeHint())
-        self.loading_view.setGeometry(QtCore.QRect(size[0] // 2 - 250, 0, 500, 500))
-
-        self.movie.start()
-
-        # Create message
         self.message = QLabel('處理中，請稍後', self.calibrate_loading_widget)
-        self.message.setStyleSheet('color: #2E75B6; font: 36px 微軟正黑體;')
+        self.message.setFont(QtGui.QFont('微軟正黑體', 48))
+        self.message.setStyleSheet('color: #2E75B6;')
         self.message.resize(self.message.sizeHint())
         self.message.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
-        self.message.setGeometry(QtCore.QRect(size[0] // 2 - self.message.width()//2, 500, self.message.width(), self.message.height()))
+        self.message.setGeometry(QtCore.QRect(size[0] // 2 - self.message.width()//2, 230, self.message.width(), self.message.height()))
 
+        self.progress_bar = QProgressBar(self.calibrate_loading_widget)
+        self.progress_bar.resize(600, 50)
+        self.progress_bar.setGeometry(QtCore.QRect(size[0] // 2 - self.progress_bar.width()//2, 320, self.progress_bar.width(), self.progress_bar.height()))
+        self.progress_bar.setStyleSheet("""
+            QProgressBar{
+                border: 2px solid grey;
+                border-radius: 5px;
+                text-align: center
+            }
+            QProgressBar::chunck{
+                background-color: #05B8CC;
+                width: 20px;
+            }
+        """)
+        
         # input area
         self.calibrate_input_widget = QWidget(self)
 
         # weight of calibrate object
         self.calibrate_weight = 0
-        self.calibrate_weight_info = '請輸入校正物之重量: {} 公克'
+        self.calibrate_weight_info = '請將物體放置平面, 並輸入其重量: {} 公克.'
         self.label_calibrate_weight = QLabel(self.calibrate_weight_info.format(self.calibrate_weight),
                                              self.calibrate_input_widget)
         self.label_calibrate_weight.setFont(self.FONT)
@@ -416,11 +478,30 @@ class WeightModulePage(QWidget):
             size[0] // 2 - 400, 20 + self.label_calibrate_weight.height()), (800, 560))
 
         self.key_board.output_signal.connect(self.set_calibrate_weight)
-        self.key_board.calibrate_signal.connect(self.calibrate)
+        self.key_board.confirm_signal.connect(self.confirm)
 
-        self.stacked_layout.addWidget(self.calibrate_loading_widget)
+        # finish area
+        self.calibrate_finish_widget = QWidget(self)
+
+        self.label_finifsh = QLabel('請將物體移除後,點擊 "返回" 案鈕.', self.calibrate_finish_widget)
+        self.label_finifsh.setWordWrap(True)
+        self.label_finifsh.setFont(QtGui.QFont('微軟正黑體', 32))
+        self.label_finifsh.resize(1300, 100)
+        self.label_finifsh.setGeometry(
+            QtCore.QRect(0, 0, self.label_finifsh.width(), self.label_finifsh.height()))
+        self.label_finifsh.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.label_finifsh.setStyleSheet(self.LABEL_STYLE.format(**self.COLOR_LIST[2]))
+
+        self.btn_finish = Button(self.calibrate_finish_widget, '返回', (size[0] // 2 - 250, 280), (500, 200))
+        self.btn_finish.setStyleSheet(self.btn_finish.BTN_STYLE.format(**self.btn_finish.RED))
+        self.btn_finish.clicked.connect(lambda: self.finish_signal.emit())
+
         self.stacked_layout.addWidget(self.calibrate_clear_widget)
+        self.stacked_layout.addWidget(self.calibrate_loading_widget)
         self.stacked_layout.addWidget(self.calibrate_input_widget)
+        self.stacked_layout.addWidget(self.calibrate_finish_widget)
+
+        self.object_weight = 0
 
     def set_weight(self, weight):
         self.label_weight.setText(self.weight_info.format(weight))
@@ -432,10 +513,17 @@ class WeightModulePage(QWidget):
     def calibrate(self):
         self.calibrate_signal.emit()
 
+    def confirm(self, object_weight):
+        self.object_weight = object_weight
+        self.calibrate_signal.emit()
+
+    def change_component(self, component):
+        self.stacked_layout.setCurrentIndex(component)
+
 
 class KeyBoard(QWidget):
     output_signal = pyqtSignal(str)
-    calibrate_signal = pyqtSignal()
+    confirm_signal = pyqtSignal(float)
     FONT = QtGui.QFont('微軟正黑體', 36)
     COMMANDS_NUM = 0
     COMMANDS_DOT = 1
@@ -472,7 +560,7 @@ class KeyBoard(QWidget):
         self.bnt_del.clicked_signal.connect(self.command_handler)
         self.grid_layout.addWidget(self.bnt_del, 0, 3, 2, 1)
 
-        self.bnt_calibrate = KeyBoardBtn('校\n正', (150, 260), self.COMMANDS_CAL, data=None)
+        self.bnt_calibrate = KeyBoardBtn('確\n認', (150, 260), self.COMMANDS_CAL, data=None)
         self.bnt_calibrate.clicked_signal.connect(self.command_handler)
         self.grid_layout.addWidget(self.bnt_calibrate, 2, 3, 2, 1)
 
@@ -486,7 +574,7 @@ class KeyBoard(QWidget):
             if len(self.output) > 0:
                 self.output = self.output[:-1]
         elif obj['cmd'] == self.COMMANDS_CAL:
-            self.calibrate_signal.emit()
+            self.confirm_signal.emit(float(self.output))
 
         self.output_signal.emit(self.output)
 
