@@ -1,10 +1,10 @@
 import argparse
+import configparser
 import datetime
 import json
+import logging
 import os
 import sys
-import logging
-import configparser
 
 from PyQt5.QtCore import QThreadPool, QTimer
 from PyQt5.QtGui import QImage, QPixmap
@@ -14,16 +14,15 @@ from ui.config import UI_PAGE_NAME
 from ui.loading_component import LoadingComponent
 from ui.main_page import Ui_MainWindow
 from ui.message_component import MessageComponent
+from ui.setting_page import SettingPage
 from ui.user_control import UserControl
 from ui.user_select import UserSelect
-from ui.setting_page import SettingPage
-
-from utils.led import LedController
 from utils.api import Api
-
+from utils.led import LedController
+from utils.worker import Worker
 from worker.camera_worker import DepthCameraWorker
-from worker.weight_worker import WeightReaderWorker
 from worker.upload_worker import UploadWorker
+from worker.weight_worker import WeightReaderWorker
 
 CODE_VERSION = '1.0.1'
 
@@ -33,6 +32,7 @@ USER_LIST_PATH = r'config/user_list.json'
 parser = argparse.ArgumentParser()
 parser.add_argument('-sl', '--show_log', action='store_true', help='show message in terminal')
 args = parser.parse_args()
+
 
 class MainWindow(QMainWindow):
     def __init__(self, config):
@@ -81,50 +81,64 @@ class MainWindow(QMainWindow):
         self.loading_component = LoadingComponent()
 
         # message component
-        self.message_component = MessageComponent()
+        self.message_component = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png')
         self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+
+        # init message component
+        self.init_message_component = MessageComponent(text='初始化中，請稍後。', font_size=64, color='#2E75B6', wait_time=0)
 
         # setting page
         self.setting_page = SettingPage()
         self.setting_page.save_signal.connect(self.save_handler)
 
         # stack layout
-        self.qls = QStackedLayout()
-        self.qls.addWidget(self.user_select)
-        self.qls.addWidget(self.user_control)
-        self.qls.addWidget(self.loading_component)
-        self.qls.addWidget(self.message_component)
-        self.qls.addWidget(self.setting_page)
+        self.stacked_layout = QStackedLayout()
+        self.stacked_layout.addWidget(self.user_select)
+        self.stacked_layout.addWidget(self.user_control)
+        self.stacked_layout.addWidget(self.loading_component)
+        self.stacked_layout.addWidget(self.message_component)
+        self.stacked_layout.addWidget(self.setting_page)
+        self.stacked_layout.addWidget(self.init_message_component)
 
-        self.main_window.verticalLayout.addLayout(self.qls)
+        self.stacked_layout.setCurrentIndex(UI_PAGE_NAME.INIT_MSG)
+
+        self.main_window.verticalLayout.addLayout(self.stacked_layout)
 
         self.user_buttons = []
 
         # 多執行序
         self.thread_pool = QThreadPool()
-        
-        self.depth_camera_worker = DepthCameraWorker()
-        self.depth_camera_worker.signals.data.connect(self.show_image)
-        
-        self.weight_reader_worker = WeightReaderWorker(
-            channel_data=self.config.getint('weight', 'channel_data'),
-            channel_clk=self.config.getint('weight', 'channel_clk'),
-            reference_unit=self.config.getfloat('weight', 'reference_unit')
-        )
-        
-        self.thread_pool.start(self.depth_camera_worker)
-        self.thread_pool.start(self.weight_reader_worker)
 
         # 計數器，間隔一秒再存資料
         self.timer = QTimer()
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
 
+        # 初始化執行序
+        self.init_worker = Worker(self.setup_sensors)
+        self.init_worker.signals.finished.connect(self.finish_init)
+        self.thread_pool.start(self.init_worker)
+
         # Params
         self.user_data = None
         self.save_type = None
         self.is_upload = 0
 
+    def setup_sensors(self):
+        self.depth_camera_worker = DepthCameraWorker()
+        self.depth_camera_worker.signals.data.connect(self.show_image)
+
+        self.weight_reader_worker = WeightReaderWorker(
+            channel_data=self.config.getint('weight', 'channel_data'),
+            channel_clk=self.config.getint('weight', 'channel_clk'),
+            reference_unit=self.config.getfloat('weight', 'reference_unit')
+        )
+
+        self.thread_pool.start(self.depth_camera_worker)
+        self.thread_pool.start(self.weight_reader_worker)
+
+    def finish_init(self):
+        self.change_page(UI_PAGE_NAME.USER_SELECT)
         self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
 
     def set_title_text(self, text):
@@ -219,7 +233,7 @@ class MainWindow(QMainWindow):
             self.set_title_text('設定')
             self.main_window.return_button.show()
 
-        self.qls.setCurrentIndex(page)
+        self.stacked_layout.setCurrentIndex(page)
 
     def user_button_handler(self, data):
         self.user_data = data
@@ -236,7 +250,7 @@ class MainWindow(QMainWindow):
             grade=self.config.getint('school', 'grade'),
             class_name=self.config.getint('school', 'class')
         )
-        
+
         if status_code == 200:
             with open(USER_LIST_PATH, 'w', encoding='utf8') as outfile:
                 json.dump(user_list, outfile, indent=4, ensure_ascii=False)
@@ -245,12 +259,12 @@ class MainWindow(QMainWindow):
                 user_list = json.load(json_file)
 
         self.user_select.set_user_btn_page(user_list)
-    
+
     def save_handler(self, data):
         self.save_config(data)
         self.set_user_list()
         self.change_page(UI_PAGE_NAME.USER_SELECT)
-        
+
     def save_config(self, data):
         for section, value in data.items():
             for attr, val in value.items():

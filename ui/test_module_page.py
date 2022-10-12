@@ -117,7 +117,7 @@ class TestModulePage(QWidget):
         self.led_timer.timeout.connect(self.led_handler)
         self.led_status = 0
 
-        # Depth
+        # Weight
         self.weight_reader = WeightReader(
             dout=self.config.getint('weight', 'channel_data'),
             pd_sck=self.config.getint('weight', 'channel_clk'),
@@ -126,7 +126,6 @@ class TestModulePage(QWidget):
 
         self.weight_reader.setup()
 
-        # Weight
         self.weight_timer = QTimer()
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)

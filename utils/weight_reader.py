@@ -1,4 +1,3 @@
-import time
 import logging
 import RPi.GPIO as GPIO
 
@@ -12,7 +11,6 @@ class WeightReader:
         self.hx = HX711(dout, pd_sck)
         self.hx.set_reading_format('MSB', 'MSB')
         self.reference_unit = reference_unit
-
 
     def setup(self):
         self.val = 0
