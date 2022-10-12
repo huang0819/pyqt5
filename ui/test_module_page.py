@@ -1,13 +1,12 @@
 import json
-
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal, QTimer
-from PyQt5.QtGui import QPixmap, QImage, QMovie
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout, QProgressBar
-
 import logging
+
 import cv2
 import numpy as np
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QObject, pyqtSignal, QTimer
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame, QGridLayout, QProgressBar
 
 from utils.depth_camera import DepthCamera
 from utils.led import LedController
@@ -124,6 +123,7 @@ class TestModulePage(QWidget):
             reference_unit=self.config.getfloat('weight', 'reference_unit')
         )
 
+        # Weight
         self.weight_timer = QTimer()
         self.weight_timer.setInterval(100)
         self.weight_timer.timeout.connect(self.weight_handler)
@@ -140,7 +140,7 @@ class TestModulePage(QWidget):
         self.calibrate_status = 0
         """
             0: empty
-            1: set object
+            1: object
         """
 
     def change_component(self, component):
@@ -148,6 +148,7 @@ class TestModulePage(QWidget):
             self.led_timer.start()
         else:
             self.led_timer.stop()
+
         if component == COMPONENT_NAME.WEIGHT:
             self.weight_timer.start()
         else:
@@ -172,6 +173,13 @@ class TestModulePage(QWidget):
         self.weight_reader.read()
         self.weight_module_page.set_weight(self.weight_reader.val)
 
+    @staticmethod
+    def process_value(value):
+        value.sort()
+        trim_amount = int(len(value) * 0.1)
+        value = value[trim_amount: -trim_amount]
+        return sum(value) / len(value)
+
     def weight_sum_handler(self):
         self.weight_reader.read(debug=True)
         self.weight_module_page.set_weight(self.weight_reader.val)
@@ -189,15 +197,9 @@ class TestModulePage(QWidget):
             self.weight_sum_timer.stop()
 
             if self.calibrate_status == 0:
-                self.empty_value.sort()
-                trimAmount = int(len(self.empty_value) * 0.1)
-                self.empty_value = self.empty_value[trimAmount:-trimAmount]
-                self.empty_value = sum(self.empty_value) / len(self.empty_value)
+                self.empty_value = self.process_value(self.empty_value)
             elif self.calibrate_status == 1:
-                self.object_value.sort()
-                trimAmount = int(len(self.object_value) * 0.1)
-                self.object_value = self.object_value[trimAmount:-trimAmount]
-                self.object_value = sum(self.object_value) / len(self.object_value)
+                self.object_value = self.process_value(self.object_value)
 
             if self.calibrate_status == 1:
                 reference_unit = (self.object_value - self.empty_value) / self.weight_module_page.object_weight
@@ -246,7 +248,6 @@ class DepthCameraPage(QWidget):
         self.setParent(parent)
 
         self.setGeometry(QtCore.QRect(*start, *size))
-
         # set image area
         self.image_view = View(self, (0, (900 - 480) // 2))
         self.depth_view = View(self, (660, (900 - 480) // 2))
@@ -318,7 +319,6 @@ class LEDModulePage(QWidget):
     def set_status(self, index):
         self.label_status.setText(self.status[index])
         self.label_status.setStyleSheet(self.LABEL_STYLE.format(**self.COLOR_LIST[index]))
-
         self.led.setStyleSheet(self.LED_STYLE.format(**self.COLOR_LIST[index]))
 
 
@@ -422,7 +422,7 @@ class WeightModulePage(QWidget):
 
         # clear area
         self.calibrate_clear_widget = QWidget(self)
-        self.label_clear = QLabel('請將拍攝平面物體全部移除後，按下 "開始校正" 按鈕', self.calibrate_clear_widget)
+        self.label_clear = QLabel('請將拍攝平面物體全部移除後，按下 "開始校正" 按鈕。', self.calibrate_clear_widget)
         self.label_clear.setWordWrap(True)
         self.label_clear.setFont(QtGui.QFont('微軟正黑體', 32))
         self.label_clear.resize(1300, 100)
@@ -438,7 +438,7 @@ class WeightModulePage(QWidget):
         # loading area
         self.calibrate_loading_widget = QWidget(self)
 
-        self.message = QLabel('處理中，請稍後', self.calibrate_loading_widget)
+        self.message = QLabel('處理中，請稍後。', self.calibrate_loading_widget)
         self.message.setFont(QtGui.QFont('微軟正黑體', 48))
         self.message.setStyleSheet('color: #2E75B6;')
         self.message.resize(self.message.sizeHint())
@@ -465,7 +465,7 @@ class WeightModulePage(QWidget):
 
         # weight of calibrate object
         self.calibrate_weight = 0
-        self.calibrate_weight_info = '請將物體放置平面, 並輸入其重量: {} 公克.'
+        self.calibrate_weight_info = '請將物體放置平面，並輸入其重量: {} 公克。'
         self.label_calibrate_weight = QLabel(self.calibrate_weight_info.format(self.calibrate_weight),
                                              self.calibrate_input_widget)
         self.label_calibrate_weight.setFont(self.FONT)
@@ -483,14 +483,14 @@ class WeightModulePage(QWidget):
         # finish area
         self.calibrate_finish_widget = QWidget(self)
 
-        self.label_finifsh = QLabel('請將物體移除後,點擊 "返回" 案鈕.', self.calibrate_finish_widget)
-        self.label_finifsh.setWordWrap(True)
-        self.label_finifsh.setFont(QtGui.QFont('微軟正黑體', 32))
-        self.label_finifsh.resize(1300, 100)
-        self.label_finifsh.setGeometry(
-            QtCore.QRect(0, 0, self.label_finifsh.width(), self.label_finifsh.height()))
-        self.label_finifsh.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
-        self.label_finifsh.setStyleSheet(self.LABEL_STYLE.format(**self.COLOR_LIST[2]))
+        self.label_finish = QLabel('請將物體移除後，點擊 "返回" 案鈕。', self.calibrate_finish_widget)
+        self.label_finish.setWordWrap(True)
+        self.label_finish.setFont(QtGui.QFont('微軟正黑體', 32))
+        self.label_finish.resize(1300, 100)
+        self.label_finish.setGeometry(
+            QtCore.QRect(0, 0, self.label_finish.width(), self.label_finish.height()))
+        self.label_finish.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.label_finish.setStyleSheet(self.LABEL_STYLE.format(**self.COLOR_LIST[2]))
 
         self.btn_finish = Button(self.calibrate_finish_widget, '返回', (size[0] // 2 - 250, 280), (500, 200))
         self.btn_finish.setStyleSheet(self.btn_finish.BTN_STYLE.format(**self.btn_finish.RED))
