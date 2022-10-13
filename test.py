@@ -13,7 +13,7 @@ from ui.message_component import MessageComponent
 from ui.test_module_page import TestModulePage
 
 
-CODE_VERSION = '1.0.0'
+CODE_VERSION = '1.0.1'
 
 CONFIG_PATH = r'config/config.ini'
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         log_level = logging.INFO
 
     logging.basicConfig(level=log_level, filename=log_file_path, filemode='a', format=FORMAT)
-    logging.info(f'*** Start application {CODE_VERSION} ***')
+    logging.info(f'*** Start test module {CODE_VERSION} ***')
 
     logging.info('[MAIN] read config file')
     config = configparser.ConfigParser()

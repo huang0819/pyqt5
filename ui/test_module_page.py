@@ -258,6 +258,7 @@ class TestModulePage(QWidget):
         self.led_timer.stop()
         self.weight_timer.stop()
         self.weight_sum_timer.stop()
+        self.led_controller.clear_GPIO()
 
 
 class DepthCameraPage(QWidget):
