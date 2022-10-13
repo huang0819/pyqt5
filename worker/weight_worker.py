@@ -26,13 +26,18 @@ class WeightReaderWorker(QRunnable):
 
         self.weight_reader.setup()
 
+        self.stop = False
+
     @pyqtSlot()
     def run(self):
         try:
-            while True:
+            while not self.stop:
                 self.weight_reader.read()
                 time.sleep(0.1)
         except:
             logging.error("[WEIGHT WORKER] catch an exception.", exc_info=True)
         finally:
             self.signals.finished.emit()  # Done
+
+    def set_stop(self, stop):
+        self.stop = stop

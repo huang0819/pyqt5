@@ -18,10 +18,12 @@ class DepthCameraWorker(QRunnable):
 
         self.depth_camera = DepthCamera()
 
+        self.stop = False
+
     @pyqtSlot()
     def run(self):
         try:
-            while True:
+            while not self.stop:
                 image, depth = self.depth_camera.read()
                 if image is not None:
                     rgb_image = np.copy(image[:, :, ::-1])
@@ -30,3 +32,6 @@ class DepthCameraWorker(QRunnable):
             logging.error("[DEPTH CAMERA WORKER] catch an exception.", exc_info=True)
         finally:
             self.signals.finished.emit()
+
+    def set_stop(self, stop):
+        self.stop = stop

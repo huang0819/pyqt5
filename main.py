@@ -11,7 +11,6 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
 
 from ui.config import UI_PAGE_NAME
-from ui.loading_component import LoadingComponent
 from ui.main_page import Ui_MainWindow
 from ui.message_component import MessageComponent
 from ui.setting_page import SettingPage
@@ -66,6 +65,7 @@ class MainWindow(QMainWindow):
         self.main_window.setupUi(self)
         self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
         self.main_window.button_setting_signal.connect(self.set_setting_page_options)
+        self.main_window.button_exit_signal.connect(self.exit_handler)
 
         self.showFullScreen()
 
@@ -222,6 +222,7 @@ class MainWindow(QMainWindow):
     def change_page(self, page):
         self.main_window.return_button.hide()
         self.main_window.setting_button.hide()
+        self.main_window.exit_button.hide()
 
         if page == UI_PAGE_NAME.USER_SELECT:
             self.set_title_text(
@@ -237,6 +238,7 @@ class MainWindow(QMainWindow):
         elif page == UI_PAGE_NAME.SETTING:
             self.set_title_text('設定')
             self.main_window.return_button.show()
+            self.main_window.exit_button.show()
 
         self.stacked_layout.setCurrentIndex(page)
 
@@ -309,7 +311,13 @@ class MainWindow(QMainWindow):
         logging.info('[MAIN] save config')
 
     def exit_handler(self):
+        self.timer.stop()
+        self.depth_camera_worker.set_stop(True)
+        self.depth_camera_worker.depth_camera.pipeline.stop()
+        self.weight_reader_worker.set_stop(True)
         self.led_controller.clear_GPIO()
+
+        self.close()
         logging.info('*** Close application ***')
 
 
