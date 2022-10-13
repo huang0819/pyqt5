@@ -78,7 +78,6 @@ class MainWindow(QMainWindow):
         self.user_control.button_click_signal.connect(self.user_control_handler)
 
         # loading component
-        # self.loading_component = LoadingComponent()
         self.loading_component = MessageComponent(text='處理中，請稍後。', font_size=64, color='#2E75B6', wait_time=0)
 
         # message component
@@ -107,6 +106,7 @@ class MainWindow(QMainWindow):
 
         self.user_buttons = []
 
+        # setup user select page
         self.set_user_list()
         self.set_title_text(
             f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
 
         # 初始化執行序
         self.init_worker = Worker(self.setup_sensors)
-        self.init_worker.signals.finished.connect(self.finish_init)
+        self.init_worker.signals.finished.connect(self.finish_setup_sensors)
         self.init_worker.setAutoDelete(True)
         self.thread_pool.start(self.init_worker)
 
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow):
         self.thread_pool.start(self.depth_camera_worker)
         self.thread_pool.start(self.weight_reader_worker)
 
-    def finish_init(self):
+    def finish_setup_sensors(self):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
         self.change_status(LED_STATUS.IDLE)
 
@@ -152,10 +152,10 @@ class MainWindow(QMainWindow):
         self.main_window.title.setText(text)
 
     def user_control_handler(self, save_type):
+        self.change_status(LED_STATUS.BUSY)
         self.change_page(UI_PAGE_NAME.LOADING)
         self.save_type = save_type
 
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_busy')))
         self.timer.start()
 
     def save_file(self):
@@ -202,8 +202,7 @@ class MainWindow(QMainWindow):
         self.is_upload = 0
 
         self.change_page(UI_PAGE_NAME.MESSAGE)
-
-        self.led_controller.set_value(*json.loads(config.get('led', 'state_idle')))
+        self.change_status(LED_STATUS.IDLE)
 
     def save_json(self, data):
         if os.path.isfile(self.json_path):
@@ -232,7 +231,6 @@ class MainWindow(QMainWindow):
             self.set_title_text(f"您好，{self.user_data['name']}同學")
             self.main_window.return_button.show()
         elif page == UI_PAGE_NAME.LOADING:
-            # self.loading_component.start()
             pass
         elif page == UI_PAGE_NAME.MESSAGE:
             self.message_component.start()
@@ -252,34 +250,35 @@ class MainWindow(QMainWindow):
         self.user_control.image_view.setPixmap(QPixmap.fromImage(qimg))
 
     def set_setting_page_options(self):
+        self.change_status(LED_STATUS.BUSY)
         self.change_page(UI_PAGE_NAME.LOADING)
+
         worker = Worker(self.api.fetch_schools)
         worker.signals.result.connect(self.fetch_schools_handler)
         worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
-        self.change_status(LED_STATUS.BUSY)
-
         worker.setAutoDelete(True)
         self.thread_pool.start(worker)
 
     def fetch_schools_handler(self, res):
-        self.setting_page.set_options(res , self.config.items('school'))
+        self.setting_page.set_options(res, self.config.items('school'))
         self.change_status(LED_STATUS.IDLE)
 
     def set_user_list(self):
-        self.change_page(UI_PAGE_NAME.LOADING)
         worker = Worker(
             self.api.fetch_user_list,
             school_id=self.config.getint('school', 'id'),
             grade=self.config.getint('school', 'grade'),
             class_name=self.config.getint('school', 'class')
-            )
-        worker.signals.result.connect(self.fetch_user_list_handler)
-        if self.status == LED_STATUS.IDLE:
-            worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
-            self.change_status(LED_STATUS.BUSY)
-
+        )
         worker.setAutoDelete(True)
-        self.thread_pool.start(worker)        
+        worker.signals.result.connect(self.fetch_user_list_handler)
+
+        if self.status == LED_STATUS.IDLE:  # if status is not init
+            self.change_status(LED_STATUS.BUSY)
+            self.change_page(UI_PAGE_NAME.LOADING)
+            worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+
+        self.thread_pool.start(worker)
 
     def fetch_user_list_handler(self, res):
         status_code, user_list = res
@@ -291,9 +290,9 @@ class MainWindow(QMainWindow):
                 user_list = json.load(json_file)
 
         self.user_select.set_user_btn_page(user_list)
+
         if self.status == LED_STATUS.BUSY:
             self.change_status(LED_STATUS.IDLE)
-
 
     def save_handler(self, data):
         self.save_config(data)
