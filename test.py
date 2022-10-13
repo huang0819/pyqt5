@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QStackedLayout
 
 from ui.config import UI_PAGE_NAME
 from ui.main_page import Ui_MainWindow
+from ui.message_component import MessageComponent
 from ui.test_module_page import TestModulePage
 
 
@@ -31,19 +32,24 @@ class MainWindow(QMainWindow):
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         self.main_window.exit_button.show()
-        self.main_window.exit_button.connect(self.exit_handler)
+        self.main_window.button_exit_signal.connect(self.exit_handler)
 
         self.showFullScreen()
 
         self.test_module_page = TestModulePage(self.config)
         self.test_module_page.save_config_signal.connect(self.save_config)
+        self.test_module_page.init_finish_signal.connect(lambda: self.qls.setCurrentIndex(1))
+
+        # init message component
+        self.init_message_component = MessageComponent(text='初始化中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
         self.set_title_text(f"測試裝置")
 
         # stack layout
         self.qls = QStackedLayout()
+        self.qls.addWidget(self.init_message_component)
         self.qls.addWidget(self.test_module_page)
-
+        
         self.main_window.verticalLayout.addLayout(self.qls)
 
     def set_title_text(self, text):

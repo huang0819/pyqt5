@@ -42,7 +42,7 @@ class UserButton(QWidget):
         self.label.setStyleSheet(f"color: {style['font_color']}")
         font = QtGui.QFont()
         font.setFamily("微軟正黑體")
-        font.setPointSize(32)
+        font.setPointSize(42)
         self.label.setFont(font)
         self.label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
         self.label.resize(300, 50)

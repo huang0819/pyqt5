@@ -67,6 +67,7 @@ class Button(QPushButton):
 
 class TestModulePage(QWidget):
     save_config_signal = pyqtSignal(dict)
+    init_finish_signal = pyqtSignal()
     LED_STATUS = ['state_setup', 'state_idle', 'state_busy']
 
     def __init__(self, config):
@@ -104,7 +105,21 @@ class TestModulePage(QWidget):
         # 初始化執行序
         self.init_worker = Worker(self.setup_sensors)
         self.init_worker.setAutoDelete(True)
+        self.init_worker.signals.finished.connect(self.init_finish_signal)
         self.thread_pool.start(self.init_worker)
+
+        self.led_timer = QTimer()
+        self.led_timer.setInterval(1000)
+        self.led_timer.timeout.connect(self.led_handler)
+        self.led_status = 0
+
+        self.weight_timer = QTimer()
+        self.weight_timer.setInterval(100)
+        self.weight_timer.timeout.connect(self.weight_handler)
+
+        self.weight_sum_timer = QTimer()
+        self.weight_sum_timer.setInterval(100)
+        self.weight_sum_timer.timeout.connect(self.weight_sum_handler)
 
         # Params
         self.read_times = READ_TIME
@@ -130,11 +145,6 @@ class TestModulePage(QWidget):
             channel_g=self.config.getint('led', 'channel_g')
         )
 
-        self.led_timer = QTimer()
-        self.led_timer.setInterval(1000)
-        self.led_timer.timeout.connect(self.led_handler)
-        self.led_status = 0
-
         # Weight
         self.weight_reader = WeightReader(
             dout=self.config.getint('weight', 'channel_data'),
@@ -144,13 +154,6 @@ class TestModulePage(QWidget):
 
         self.weight_reader.setup()
 
-        self.weight_timer = QTimer()
-        self.weight_timer.setInterval(100)
-        self.weight_timer.timeout.connect(self.weight_handler)
-
-        self.weight_sum_timer = QTimer()
-        self.weight_sum_timer.setInterval(100)
-        self.weight_sum_timer.timeout.connect(self.weight_sum_handler)
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:
@@ -458,7 +461,7 @@ class WeightModulePage(QWidget):
         # loading area
         self.calibrate_loading_widget = QWidget(self)
 
-        self.message = QLabel('處理中，請稍後。', self.calibrate_loading_widget)
+        self.message = QLabel('處理中，請稍候。', self.calibrate_loading_widget)
         self.message.setFont(QtGui.QFont('微軟正黑體', 48))
         self.message.setStyleSheet('color: #2E75B6;')
         self.message.resize(self.message.sizeHint())
