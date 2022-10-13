@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedLayout, QLabel, QFrame
 from utils.depth_camera import DepthCamera
 from utils.led import LedController
 from utils.weight_reader import WeightReader
+from utils.worker import Worker
 
 READ_TIME = 60
 
@@ -100,6 +101,23 @@ class TestModulePage(QWidget):
         # 多執行序
         self.thread_pool = QThreadPool()
 
+        # 初始化執行序
+        self.init_worker = Worker(self.setup_sensors)
+        self.init_worker.setAutoDelete(True)
+        self.thread_pool.start(self.init_worker)
+
+        # Params
+        self.read_times = READ_TIME
+        self.empty_value = []
+        self.object_value = []
+        self.object_weight = 0
+        self.calibrate_status = 0
+        """
+            0: empty
+            1: object
+        """
+
+    def setup_sensors(self):
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
 
@@ -133,17 +151,6 @@ class TestModulePage(QWidget):
         self.weight_sum_timer = QTimer()
         self.weight_sum_timer.setInterval(100)
         self.weight_sum_timer.timeout.connect(self.weight_sum_handler)
-
-        self.read_times = READ_TIME
-        self.empty_value = []
-        self.object_value = []
-        self.object_weight = 0
-
-        self.calibrate_status = 0
-        """
-            0: empty
-            1: object
-        """
 
     def change_component(self, component):
         if component == COMPONENT_NAME.LED:

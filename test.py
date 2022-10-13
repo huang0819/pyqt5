@@ -30,8 +30,8 @@ class MainWindow(QMainWindow):
         # ui setup
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
-        self.main_window.return_button.show()
-        self.main_window.button_return_signal.connect(self.exit_handler)
+        self.main_window.exit_button.show()
+        self.main_window.exit_button.connect(self.exit_handler)
 
         self.showFullScreen()
 
@@ -43,7 +43,6 @@ class MainWindow(QMainWindow):
         # stack layout
         self.qls = QStackedLayout()
         self.qls.addWidget(self.test_module_page)
-        self.qls.setCurrentIndex(UI_PAGE_NAME.TEST_MODULE)
 
         self.main_window.verticalLayout.addLayout(self.qls)
 
