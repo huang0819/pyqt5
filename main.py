@@ -78,14 +78,14 @@ class MainWindow(QMainWindow):
         self.user_control.button_click_signal.connect(self.user_control_handler)
 
         # loading component
-        self.loading_component = MessageComponent(text='處理中，請稍後。', font_size=64, color='#2E75B6', wait_time=0)
+        self.loading_component = MessageComponent(text='處理中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
         # message component
-        self.message_component = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png')
+        self.message_component = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png', font_size=64)
         self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
         # init message component
-        self.init_message_component = MessageComponent(text='初始化中，請稍後。', font_size=64, color='#2E75B6', wait_time=0)
+        self.init_message_component = MessageComponent(text='初始化中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
         # setting page
         self.setting_page = SettingPage()
