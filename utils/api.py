@@ -59,7 +59,6 @@ class Api:
             else:
                 logging.warning(f'[API] {url} failed')
 
-            return schools
         except Exception as e:
             logging.error(e)
 
