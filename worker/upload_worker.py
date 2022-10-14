@@ -22,8 +22,8 @@ class UploadWorker(QRunnable):
     @pyqtSlot()
     def run(self):
         try:
-            is_upload = self.api.upload_data(self.data)
-            self.signals.result.emit(is_upload)
+            status_code = self.api.upload_data(self.data)
+            self.signals.result.emit(1 if status_code == 200 else 0)
         except:
             logging.error("[UPLOAD WORKER] catch an exception.", exc_info=True)
         finally:

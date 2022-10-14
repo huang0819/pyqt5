@@ -16,8 +16,6 @@ class Api:
             file: npz
         :return: is_upload (int)
         """
-        is_upload = 0
-
         url = f'{self.base_url}/api/meals'
 
         payload = data['payload']
@@ -27,17 +25,21 @@ class Api:
         ]
 
         headers = {}
+
+        status_code = 0
+
         try:
             response = requests.request('POST', url, headers=headers, data=payload, files=files, timeout=30)
+            status_code = response.status_code
             if response.status_code == 200:
-                is_upload = 1
                 logging.info(f'[API] {url} success')
             else:
                 logging.warning(f'[API] {url} failed')
 
-            return is_upload
         except Exception as e:
             logging.error(e)
+
+        return status_code
 
     def fetch_schools(self):
         url = f'{self.base_url}/api/schools'
@@ -46,9 +48,11 @@ class Api:
         headers = {}
 
         schools = []
+        status_code = 0
 
         try:
             response = requests.request("GET", url, headers=headers, data=payload)
+            status_code = response.status_code
             if response.status_code == 200:
                 schools = response.json()['data']['schools']
                 logging.info(f'[API] {url} success')
@@ -58,6 +62,8 @@ class Api:
             return schools
         except Exception as e:
             logging.error(e)
+
+        return status_code, schools
 
     def fetch_user_list(self, school_id=None, grade=None, class_name=None):
         url = f'{self.base_url}/api/profileList'

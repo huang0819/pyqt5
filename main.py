@@ -80,12 +80,15 @@ class MainWindow(QMainWindow):
         # loading component
         self.loading_component = MessageComponent(text='處理中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
-        # message component
-        self.message_component = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png', font_size=64)
-        self.message_component.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+        # complete message component
+        self.complete_message = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png', font_size=64)
+        self.complete_message.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
         # init message component
-        self.init_message_component = MessageComponent(text='初始化中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
+        self.init_message = MessageComponent(text='初始化中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
+
+        # error message component
+        self.error_message = MessageComponent(text='網路異常，請確認是否有連接網路', font_size=64, color='#C00000', wait_time=0)
 
         # setting page
         self.setting_page = SettingPage()
@@ -96,9 +99,10 @@ class MainWindow(QMainWindow):
         self.stacked_layout.addWidget(self.user_select)
         self.stacked_layout.addWidget(self.user_control)
         self.stacked_layout.addWidget(self.loading_component)
-        self.stacked_layout.addWidget(self.message_component)
+        self.stacked_layout.addWidget(self.complete_message)
         self.stacked_layout.addWidget(self.setting_page)
-        self.stacked_layout.addWidget(self.init_message_component)
+        self.stacked_layout.addWidget(self.init_message)
+        self.stacked_layout.addWidget(self.error_message)
 
         self.stacked_layout.setCurrentIndex(UI_PAGE_NAME.INIT_MSG)
 
@@ -234,9 +238,12 @@ class MainWindow(QMainWindow):
         elif page == UI_PAGE_NAME.LOADING:
             pass
         elif page == UI_PAGE_NAME.MESSAGE:
-            self.message_component.start()
+            self.complete_message.start()
         elif page == UI_PAGE_NAME.SETTING:
             self.set_title_text('設定')
+            self.main_window.return_button.show()
+            self.main_window.exit_button.show()
+        elif page == UI_PAGE_NAME.ERROR_MSG:
             self.main_window.return_button.show()
             self.main_window.exit_button.show()
 
@@ -257,12 +264,17 @@ class MainWindow(QMainWindow):
 
         worker = Worker(self.api.fetch_schools)
         worker.signals.result.connect(self.fetch_schools_handler)
-        worker.signals.finished.connect(lambda: self.change_page(UI_PAGE_NAME.SETTING))
         worker.setAutoDelete(True)
         self.thread_pool.start(worker)
 
     def fetch_schools_handler(self, res):
-        self.setting_page.set_options(res, self.config.items('school'))
+        status_code, schools = res
+        if status_code == 200:
+            self.setting_page.set_options(schools, self.config.items('school'))
+            self.change_page(UI_PAGE_NAME.SETTING)
+        else:
+            self.change_page(UI_PAGE_NAME.ERROR_MSG)
+
         self.change_status(LED_STATUS.IDLE)
 
     def set_user_list(self):

@@ -5,3 +5,4 @@ class UI_PAGE_NAME:
     MESSAGE = 3
     SETTING = 4
     INIT_MSG = 5
+    ERROR_MSG = 6
