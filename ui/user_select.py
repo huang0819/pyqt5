@@ -3,60 +3,63 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QGridLayout, QWidget, QPushButton, QStackedLayout, QLabel
 from ui.user_button import UserButton
 
+
+class PageButton(QWidget):
+    BTN_SIZE = 150
+
+    def __init__(self, parent, start, button_type):
+        super(PageButton, self).__init__()
+
+        assert button_type in ['previous', 'next'], 'button type must be "previous" or "next"'
+
+        self.setParent(parent)
+
+        # button
+        self.button = QPushButton('', self)
+        self.button.resize(self.BTN_SIZE, self.BTN_SIZE)
+        self.button.setStyleSheet("""
+            QPushButton{{
+                background-color: transparent; 
+                border: none; 
+                image: url(resource/{button_type}.png)
+            }}
+            QPushButton:pressed {{
+                background-color: transparent; 
+                border: none; 
+                image: url(resource/{button_type}_pressed.png)
+            }}
+        """.format(button_type=button_type))
+        self.button.setGeometry(QtCore.QRect(*start, self.BTN_SIZE, self.BTN_SIZE))
+
+        # label
+        self.label = QLabel('上一頁' if button_type == 'previous' else '下一頁', self)
+        self.label.setFont(QtGui.QFont('微軟正黑體', 28))
+        self.label.setStyleSheet('color: #ff970c; font-weight: bold;')
+        self.label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
+        self.label.resize(self.label.sizeHint())
+        self.label.setGeometry(QtCore.QRect(start[0], start[1] + self.BTN_SIZE + 10, self.BTN_SIZE, self.BTN_SIZE))
+
+
 class UserSelect(QWidget):
     BTN_SIZE = 150
-    FONT_STYLE = QtGui.QFont('微軟正黑體', 28)
-    FONT_STYLE_SHEET = 'color: #ff970c; font-weight: bold;'
     PREVIOUS = -1
     NEXT = 1
 
     user_btn_click_signal = pyqtSignal(object)
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super(UserSelect, self).__init__()
-        self.kwargs = kwargs
 
         # 1880 * 1040
         self.setGeometry(0, 0, 1880, 1040)
 
-        # previous btn
-        self.previous_button = QPushButton('', self)
-        self.previous_button.setMaximumSize(self.BTN_SIZE, self.BTN_SIZE)
-        self.previous_button.setIcon(QtGui.QIcon(r'resource/previous.png'))
-        self.previous_button.setIconSize(QtCore.QSize(self.BTN_SIZE, self.BTN_SIZE))
-        self.previous_button.setStyleSheet('background-color: #f0f0f0; border: none')
-        self.previous_button.setGeometry(
-            QtCore.QRect(0, self.height() // 2 - self.BTN_SIZE - 30, self.BTN_SIZE, self.BTN_SIZE))
-        self.previous_button.clicked.connect(lambda: self.page_btn_handler(self.PREVIOUS))
-
-        # previous label
-        self.previous_label = QLabel('上一頁', self)
-        self.previous_label.setFont(self.FONT_STYLE)
-        self.previous_label.setStyleSheet(self.FONT_STYLE_SHEET)
-        self.previous_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
-        self.previous_label.resize(self.previous_label.sizeHint())
-        self.previous_label.setGeometry(
-            QtCore.QRect(0, self.height() // 2 - 20, self.BTN_SIZE, self.BTN_SIZE))
-
         # next btn
-        self.next_button = QPushButton('', self)
-        self.next_button.setMaximumSize(self.BTN_SIZE, self.BTN_SIZE)
-        self.next_button.setIcon(QtGui.QIcon(r'resource/next.png'))
-        self.next_button.setIconSize(QtCore.QSize(self.BTN_SIZE, self.BTN_SIZE))
-        self.next_button.setStyleSheet('background-color: #f0f0f0; border: none')
-        self.next_button.setGeometry(
-            QtCore.QRect(self.width() - self.BTN_SIZE, self.height() // 2 - self.BTN_SIZE - 30, self.BTN_SIZE,
-                         self.BTN_SIZE))
-        self.next_button.clicked.connect(lambda: self.page_btn_handler(self.NEXT))
+        self.next_button = PageButton(self, (self.width() - self.BTN_SIZE, self.height() // 2 - self.BTN_SIZE - 30), 'next')
+        self.next_button.button.clicked.connect(lambda: self.page_btn_handler(self.NEXT))
 
-        # next label
-        self.next_label = QLabel('下一頁', self)
-        self.next_label.setFont(self.FONT_STYLE)
-        self.next_label.setStyleSheet(self.FONT_STYLE_SHEET)
-        self.next_label.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignTop)
-        self.next_label.resize(self.previous_label.sizeHint())
-        self.next_label.setGeometry(
-            QtCore.QRect(self.width() - self.BTN_SIZE, self.height() // 2 - 20, self.BTN_SIZE, self.BTN_SIZE))
+        # previous btn
+        self.previous_button = PageButton(self, (0, self.height() // 2 - self.BTN_SIZE - 30), 'previous')
+        self.previous_button.button.clicked.connect(lambda: self.page_btn_handler(self.PREVIOUS))
 
         # user_btn_area
         self.user_btn_area = QWidget(self)
@@ -101,6 +104,7 @@ class UserSelect(QWidget):
             self.page = self.max_page
 
         self.stacked_layout.setCurrentIndex(self.page)
+
 
 class UserBtnPage(QWidget):
     user_btn_click_signal = pyqtSignal(object)
