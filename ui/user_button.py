@@ -19,8 +19,10 @@ class UserButton(QWidget):
         }
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, parent, **kwargs):
         super(UserButton, self).__init__()
+
+        self.setParent(parent)
 
         self.data = kwargs['data']
         self.index = kwargs['index']

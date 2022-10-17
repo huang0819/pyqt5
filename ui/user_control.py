@@ -36,7 +36,7 @@ class UserControl(QWidget):
 
     button_click_signal = pyqtSignal(int)
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super(UserControl, self).__init__()
 
         # 1880 * 1040

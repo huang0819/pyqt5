@@ -111,24 +111,16 @@ class UserBtnPage(QWidget):
 
     def __init__(self):
         super(UserBtnPage, self).__init__()
-
-        self.grid_layout = QGridLayout(self)
-        self.grid_layout.setSpacing(30)
-        self.grid_layout.setGeometry(QtCore.QRect(0, 0, 1680, 840))
-
-        self.setLayout(self.grid_layout)
-
         self.user_buttons = []
 
     def set_user_btn(self, user_list):
         self.user_buttons = []
 
         for index, user_data in enumerate(user_list):
-            self.user_buttons.append(UserButton(data=user_data, index=index))
+            self.user_buttons.append(UserButton(self, data=user_data, index=index))
             self.user_buttons[index].resize(self.user_buttons[index].sizeHint())
             self.user_buttons[index].user_click_signal.connect(self.user_btn_handler)
-
-            self.grid_layout.addWidget(self.user_buttons[index], index // 5, index % 5, 1, 1)
+            self.user_buttons[index].setGeometry(QtCore.QRect(300 * (index % 5) + 20 * (index % 5), 30 + 440 * (index // 5), 300, 400))
 
     def user_btn_handler(self, data):
         self.user_btn_click_signal.emit(data)
