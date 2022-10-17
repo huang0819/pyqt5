@@ -30,7 +30,7 @@ class UserButton(QWidget):
         style = self.STYLE[self.index % 2]
 
         self.button = QPushButton('', self)
-        self.button.resize(300, 300)
+        self.button.setMinimumSize(300, 300)
         self.button.setStyleSheet("""
             QPushButton{{
                 background-color: transparent; 
