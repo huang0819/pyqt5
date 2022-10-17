@@ -109,11 +109,11 @@ class UserSelect(QWidget):
 class UserBtnPage(QWidget):
     user_btn_click_signal = pyqtSignal(object)
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         super(UserBtnPage, self).__init__()
 
         self.grid_layout = QGridLayout(self)
-        self.grid_layout.setSpacing(50)
+        self.grid_layout.setSpacing(30)
         self.grid_layout.setGeometry(QtCore.QRect(0, 0, 1680, 840))
 
         self.setLayout(self.grid_layout)

@@ -30,7 +30,7 @@ class UserButton(QWidget):
         style = self.STYLE[self.index % 2]
 
         self.button = QPushButton('', self)
-        self.button.setMinimumSize(300, 300)
+        self.button.setMinimumSize(250, 250)
         self.button.setStyleSheet("""
             QPushButton{{
                 background-color: transparent;
@@ -47,7 +47,7 @@ class UserButton(QWidget):
         self.label = QLabel(self.data['name'], self)
         self.label.setStyleSheet(f"color: {style['font_color']}")
         self.label.setFont(QtGui.QFont('微軟正黑體', 42))
-        self.label.setMinimumSize(300, 50)
+        self.label.setMinimumSize(250, 50)
         self.label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
 
         self.layout.addWidget(self.button)
