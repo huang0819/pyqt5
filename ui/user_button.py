@@ -33,13 +33,13 @@ class UserButton(QWidget):
         self.button.setMinimumSize(300, 300)
         self.button.setStyleSheet("""
             QPushButton{{
-                background-color: transparent; 
-                border: none; 
+                background-color: transparent;
+                border: none;
                 image: url(resource/user_{button_type}.png)
             }}
             QPushButton:pressed {{
-                background-color: transparent; 
-                border: none; 
+                background-color: transparent;
+                border: none;
                 image: url(resource/user_{button_type}_pressed.png)
             }}
         """.format(button_type=style['img_color_name']))
@@ -47,8 +47,8 @@ class UserButton(QWidget):
         self.label = QLabel(self.data['name'], self)
         self.label.setStyleSheet(f"color: {style['font_color']}")
         self.label.setFont(QtGui.QFont('微軟正黑體', 42))
+        self.label.setMinimumSize(300, 50)
         self.label.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignHCenter)
-        self.label.resize(300, 50)
 
         self.layout.addWidget(self.button)
         self.layout.addWidget(self.label)
