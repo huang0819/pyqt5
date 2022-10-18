@@ -23,7 +23,7 @@ from worker.camera_worker import DepthCameraWorker
 from worker.upload_worker import UploadWorker
 from worker.weight_worker import WeightReaderWorker
 
-CODE_VERSION = '1.0.2'
+CODE_VERSION = '1.0.3'
 
 CONFIG_PATH = r'config/config.ini'
 USER_LIST_PATH = r'config/user_list.json'
@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         self.api = Api(config.get('api', 'base_url'))
         self.status = LED_STATUS.SETUP
 
-        # 多執行序
+        # Multi thread
         self.thread_pool = QThreadPool()
 
         # Create data folder
@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
 
         self.json_path = os.path.join(self.save_folder, 'data.json')
 
-        # led control
+        # Led control
         self.led_controller = LedController(
             channel_r=self.config.getint('led', 'channel_r'),
             channel_b=self.config.getint('led', 'channel_b'),
@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
         )
         self.change_status(LED_STATUS.SETUP)
 
-        # ui setup
+        # UI setup
         self.main_window = Ui_MainWindow()
         self.main_window.setupUi(self)
         self.main_window.button_return_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
@@ -69,32 +69,32 @@ class MainWindow(QMainWindow):
 
         self.showFullScreen()
 
-        # user select page
+        # User select page
         self.user_select = UserSelect()
         self.user_select.user_btn_click_signal.connect(self.user_button_handler)
 
-        # user control page
+        # User control page
         self.user_control = UserControl()
         self.user_control.button_click_signal.connect(self.user_control_handler)
 
-        # loading component
+        # Loading component
         self.loading_component = MessageComponent(text='處理中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
-        # complete message component
+        # Complete message component
         self.complete_message = MessageComponent(text='資料收集完成\n可將餐盤取出', image_path='resource/complete.png', font_size=64)
         self.complete_message.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
 
-        # init message component
+        # Init message component
         self.init_message = MessageComponent(text='初始化中，請稍候。', font_size=64, color='#2E75B6', wait_time=0)
 
-        # error message component
+        # Error message component
         self.error_message = MessageComponent(text='網路異常，請確認是否有連接網路', font_size=64, color='#C00000', wait_time=0)
 
-        # setting page
+        # Setting page
         self.setting_page = SettingPage()
         self.setting_page.save_signal.connect(self.save_handler)
 
-        # stack layout
+        # Stack layout
         self.stacked_layout = QStackedLayout()
         self.stacked_layout.addWidget(self.user_select)
         self.stacked_layout.addWidget(self.user_control)
@@ -110,17 +110,17 @@ class MainWindow(QMainWindow):
 
         self.user_buttons = []
 
-        # setup user select page
+        # Setup user select page
         self.set_user_list()
         self.set_title_text(
             f"{self.config.get('school', 'name')}{self.config.getint('school', 'grade')}年{self.config.get('school', 'class')}班")
 
-        # 計數器，間隔一秒再存資料
+        # Wait 1 second for saving file
         self.timer = QTimer()
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
 
-        # 初始化執行序
+        # Thread of initialize module
         self.init_worker = Worker(self.setup_sensors)
         self.init_worker.signals.finished.connect(self.finish_setup_sensors)
         self.init_worker.setAutoDelete(True)
