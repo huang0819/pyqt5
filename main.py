@@ -126,6 +126,11 @@ class MainWindow(QMainWindow):
         self.init_worker.setAutoDelete(True)
         self.thread_pool.start(self.init_worker)
 
+        # If weight worker not work
+        self.pass_timer = QTimer()
+        self.pass_timer.setInterval(20000)
+        self.pass_timer.timeout.connect(self.pass_weight_init)
+
         # Params
         self.user_data = None
         self.save_type = None
@@ -139,6 +144,8 @@ class MainWindow(QMainWindow):
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
 
+        self.pass_timer.start()
+
         self.weight_reader_worker = WeightReaderWorker(
             channel_data=self.config.getint('weight', 'channel_data'),
             channel_clk=self.config.getint('weight', 'channel_clk'),
@@ -151,6 +158,10 @@ class MainWindow(QMainWindow):
     def finish_setup_sensors(self):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
         self.change_status(LED_STATUS.IDLE)
+
+    def pass_weight_init(self):
+        self.thread_pool.start(self.depth_camera_worker)
+        self.finish_setup_sensors()
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)

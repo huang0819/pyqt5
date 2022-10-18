@@ -120,7 +120,7 @@ class HX711:
         # serial interface.
         self.readLock.release()
 
-        # Depending on how we're configured, return an orderd list of raw byte
+        # Depending on how we're configured, return an ordered list of raw byte
         # values.
         if self.byte_format == 'LSB':
             return [thirdByte, secondByte, firstByte]
