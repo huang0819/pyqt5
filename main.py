@@ -23,7 +23,7 @@ from worker.camera_worker import DepthCameraWorker
 from worker.upload_worker import UploadWorker
 from worker.weight_worker import WeightReaderWorker
 
-CODE_VERSION = '1.0.1'
+CODE_VERSION = '1.0.2'
 
 CONFIG_PATH = r'config/config.ini'
 USER_LIST_PATH = r'config/user_list.json'
@@ -160,6 +160,7 @@ class MainWindow(QMainWindow):
         self.change_status(LED_STATUS.IDLE)
 
     def pass_weight_init(self):
+        logging.info('[MAIN] weight reader not connected')
         self.thread_pool.start(self.depth_camera_worker)
         self.finish_setup_sensors()
 
