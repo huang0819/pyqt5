@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         self.thread_pool.start(self.depth_camera_worker)
         self.thread_pool.start(self.weight_reader_worker)
 
-        self.self.is_weight_reader_ok = True
+        self.is_weight_reader_ok = True
 
     def finish_setup_sensors(self):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
