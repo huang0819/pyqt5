@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         data = {
             'payload': {
                 'user_id': self.user_data['user_id'],
-                'weight': self.weight_reader_worker.weight_reader.val if self.self.is_weight_reader_ok else 0,
+                'weight': self.weight_reader_worker.weight_reader.val if self.is_weight_reader_ok else 0,
                 'meal_date': datetime.datetime.now().strftime('%Y-%m-%d'),
                 'type': self.save_type
             },
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         self.save_json({
             file_name: {
                 'user_id': self.user_data['user_id'],
-                'weight': self.weight_reader_worker.weight_reader.val if self.self.is_weight_reader_ok else 0,
+                'weight': self.weight_reader_worker.weight_reader.val if self.is_weight_reader_ok else 0,
                 'save_type': self.save_type,
                 'is_upload': self.is_upload
             }
