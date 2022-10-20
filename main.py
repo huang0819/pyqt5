@@ -90,6 +90,10 @@ class MainWindow(QMainWindow):
         # Error message component
         self.error_message = MessageComponent(text='網路異常，請確認是否有連接網路', font_size=64, color='#C00000', wait_time=0)
 
+        # Device not connect message component
+        self.device_message = MessageComponent(text='感測裝置異常，請確認是否有正確連接設備', font_size=64, color='#C00000', wait_time=1000)
+        self.device_message.close_signal.connect(lambda: self.change_page(UI_PAGE_NAME.USER_SELECT))
+
         # Setting page
         self.setting_page = SettingPage()
         self.setting_page.save_signal.connect(self.save_handler)
@@ -103,6 +107,7 @@ class MainWindow(QMainWindow):
         self.stacked_layout.addWidget(self.setting_page)
         self.stacked_layout.addWidget(self.init_message)
         self.stacked_layout.addWidget(self.error_message)
+        self.stacked_layout.addWidget(self.device_message)
 
         self.stacked_layout.setCurrentIndex(UI_PAGE_NAME.INIT_MSG)
 
@@ -136,6 +141,7 @@ class MainWindow(QMainWindow):
         self.user_data = None
         self.save_type = None
         self.is_upload = 0
+        self.is_depth_camera_ok = False
         self.is_weight_reader_ok = False
 
     def change_status(self, status):
@@ -144,7 +150,9 @@ class MainWindow(QMainWindow):
 
     def setup_sensors(self):
         self.depth_camera_worker = DepthCameraWorker()
-        self.depth_camera_worker.signals.data.connect(self.show_image)
+        if self.depth_camera_worker.depth_camera is not None:
+            self.is_depth_camera_ok = True
+            self.depth_camera_worker.signals.data.connect(self.show_image)
 
         self.weight_reader_worker = WeightReaderWorker(
             channel_data=self.config.getint('weight', 'channel_data'),
@@ -163,19 +171,23 @@ class MainWindow(QMainWindow):
 
     def pass_weight_init(self):
         logging.info('[MAIN] weight reader not connected')
-        self.thread_pool.start(self.depth_camera_worker)
-        self.finish_setup_sensors()
+        if self.is_depth_camera_ok:
+            self.thread_pool.start(self.depth_camera_worker)
         self.pass_timer.stop()
+        self.finish_setup_sensors()
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
 
     def user_control_handler(self, save_type):
-        self.change_status(LED_STATUS.BUSY)
-        self.change_page(UI_PAGE_NAME.LOADING)
-        self.save_type = save_type
+        if self.is_depth_camera_ok:
+            self.change_status(LED_STATUS.BUSY)
+            self.change_page(UI_PAGE_NAME.LOADING)
+            self.save_type = save_type
 
-        self.timer.start()
+            self.timer.start()
+        else:
+            self.change_page(UI_PAGE_NAME.DEVICE_MSG)
 
     def save_file(self):
         self.timer.stop()
@@ -261,6 +273,8 @@ class MainWindow(QMainWindow):
         elif page == UI_PAGE_NAME.ERROR_MSG:
             self.main_window.return_button.show()
             self.main_window.exit_button.show()
+        elif page == UI_PAGE_NAME.DEVICE_MSG:
+            self.device_message.start()
 
         self.stacked_layout.setCurrentIndex(page)
 

@@ -6,3 +6,4 @@ class UI_PAGE_NAME:
     SETTING = 4
     INIT_MSG = 5
     ERROR_MSG = 6
+    DEVICE_MSG = 7

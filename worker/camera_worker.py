@@ -16,9 +16,13 @@ class DepthCameraWorker(QRunnable):
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
-        self.depth_camera = DepthCamera()
-
-        self.stop = False
+        try:
+            self.depth_camera = DepthCamera()
+            self.stop = False
+        except:
+            logging.error("[DEPTH CAMERA WORKER] camera not found")
+            self.depth_camera = None
+            self.stop = True
 
     @pyqtSlot()
     def run(self):

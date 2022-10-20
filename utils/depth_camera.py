@@ -1,7 +1,8 @@
-import pyrealsense2.pyrealsense2 as rs
-import numpy as np
-import cv2
 import logging
+
+import numpy as np
+import pyrealsense2.pyrealsense2 as rs
+
 
 class DepthCamera:
     def __init__(self):
