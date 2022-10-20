@@ -170,6 +170,9 @@ class MainWindow(QMainWindow):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
         self.change_status(LED_STATUS.IDLE)
 
+        logging.info(f"[MAIN] depth camera setup {'success' if self.is_depth_camera_ok else 'failed'}")
+        logging.info(f"[MAIN] weight reader setup {'success' if self.is_weight_reader_ok else 'failed'}")
+
     def pass_weight_init(self):
         logging.info('[MAIN] weight reader not connected')
         if self.is_depth_camera_ok:
