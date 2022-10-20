@@ -165,6 +165,7 @@ class MainWindow(QMainWindow):
         logging.info('[MAIN] weight reader not connected')
         self.thread_pool.start(self.depth_camera_worker)
         self.finish_setup_sensors()
+        self.pass_timer.stop()
 
     def set_title_text(self, text):
         self.main_window.title.setText(text)
