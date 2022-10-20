@@ -136,6 +136,7 @@ class MainWindow(QMainWindow):
         self.user_data = None
         self.save_type = None
         self.is_upload = 0
+        self.is_weight_reader_ok = False
 
     def change_status(self, status):
         self.status = status
@@ -153,6 +154,8 @@ class MainWindow(QMainWindow):
 
         self.thread_pool.start(self.depth_camera_worker)
         self.thread_pool.start(self.weight_reader_worker)
+
+        self.self.is_weight_reader_ok = True
 
     def finish_setup_sensors(self):
         self.change_page(UI_PAGE_NAME.USER_SELECT)
@@ -187,7 +190,7 @@ class MainWindow(QMainWindow):
         data = {
             'payload': {
                 'user_id': self.user_data['user_id'],
-                'weight': self.weight_reader_worker.weight_reader.val,
+                'weight': self.weight_reader_worker.weight_reader.val if self.self.is_weight_reader_ok else 0,
                 'meal_date': datetime.datetime.now().strftime('%Y-%m-%d'),
                 'type': self.save_type
             },
@@ -204,7 +207,7 @@ class MainWindow(QMainWindow):
         self.save_json({
             file_name: {
                 'user_id': self.user_data['user_id'],
-                'weight': self.weight_reader_worker.weight_reader.val,
+                'weight': self.weight_reader_worker.weight_reader.val if self.self.is_weight_reader_ok else 0,
                 'save_type': self.save_type,
                 'is_upload': self.is_upload
             }
