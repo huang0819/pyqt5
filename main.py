@@ -120,16 +120,17 @@ class MainWindow(QMainWindow):
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.save_file)
 
+        # If weight worker not work
+        self.pass_timer = QTimer()
+        self.pass_timer.setInterval(20000)
+        self.pass_timer.timeout.connect(self.pass_weight_init)
+
         # Thread of initialize module
         self.init_worker = Worker(self.setup_sensors)
         self.init_worker.signals.finished.connect(self.finish_setup_sensors)
         self.init_worker.setAutoDelete(True)
         self.thread_pool.start(self.init_worker)
-
-        # If weight worker not work
-        self.pass_timer = QTimer()
-        self.pass_timer.setInterval(20000)
-        self.pass_timer.timeout.connect(self.pass_weight_init)
+        self.pass_timer.start()
 
         # Params
         self.user_data = None
@@ -143,8 +144,6 @@ class MainWindow(QMainWindow):
     def setup_sensors(self):
         self.depth_camera_worker = DepthCameraWorker()
         self.depth_camera_worker.signals.data.connect(self.show_image)
-
-        self.pass_timer.start()
 
         self.weight_reader_worker = WeightReaderWorker(
             channel_data=self.config.getint('weight', 'channel_data'),
