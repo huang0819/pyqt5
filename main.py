@@ -23,7 +23,7 @@ from worker.camera_worker import DepthCameraWorker
 from worker.upload_worker import UploadWorker
 from worker.weight_worker import WeightReaderWorker
 
-CODE_VERSION = '1.0.3'
+CODE_VERSION = '1.0.4'
 
 CONFIG_PATH = r'config/config.ini'
 USER_LIST_PATH = r'config/user_list.json'
@@ -166,6 +166,7 @@ class MainWindow(QMainWindow):
         self.is_weight_reader_ok = True
 
     def finish_setup_sensors(self):
+        self.pass_timer.stop()
         self.change_page(UI_PAGE_NAME.USER_SELECT)
         self.change_status(LED_STATUS.IDLE)
 
